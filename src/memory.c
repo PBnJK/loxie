@@ -22,7 +22,7 @@ void *memRealloc( void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE ) 
 
 	void *result = realloc(pointer, NEW_SIZE);
 	if( result == NULL ) {
-		/* Não foi possível alocar memória
+		/* Um erro aconteceu quando tentamos alocar mais memória
 		 * Ou a memória RAM acabou ( x _ x ) ...
 		 * ... ou um erro bisonho aconteceu.
 		 *

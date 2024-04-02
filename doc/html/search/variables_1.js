@@ -1,4 +1,7 @@
 var searchData=
 [
-  ['size_0',['size',['../struct_chunk.html#aaf1c100772d3eea6e8e2a2cdda021856',1,'Chunk::size'],['../struct_value_array.html#ac87155cd59a0f76bab44e842a72c4514',1,'ValueArray::size']]]
+  ['line_0',['line',['../struct_line_start.html#ab523dd01a27a8030415732b21b2d3b5d',1,'LineStart']]],
+  ['linecount_1',['lineCount',['../struct_chunk.html#aec119e5337c3be12679629b21371ab39',1,'Chunk']]],
+  ['lines_2',['lines',['../struct_chunk.html#af1622dd8379089fc764bb739ab57a14b',1,'Chunk']]],
+  ['linesize_3',['lineSize',['../struct_chunk.html#a7ab7f9b98d438e455c9156a89f59cede',1,'Chunk']]]
 ];

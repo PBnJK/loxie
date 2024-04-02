@@ -1,13 +1,14 @@
 var indexSectionsWithContent =
 {
-  0: "cdemosv",
-  1: "cv",
-  2: "cdemv",
+  0: "cdelmosv",
+  1: "clv",
+  2: "cdemov",
   3: "cdemv",
-  4: "csv",
-  5: "cv",
+  4: "closv",
+  5: "clv",
   6: "o",
-  7: "m"
+  7: "o",
+  8: "m"
 };
 
 var indexSectionNames =
@@ -19,7 +20,8 @@ var indexSectionNames =
   4: "variables",
   5: "typedefs",
   6: "enums",
-  7: "defines"
+  7: "enumvalues",
+  8: "defines"
 };
 
 var indexSectionLabels =
@@ -31,6 +33,7 @@ var indexSectionLabels =
   4: "Variables",
   5: "Typedefs",
   6: "Enumerations",
-  7: "Macros"
+  7: "Enumerator",
+  8: "Macros"
 };
 

@@ -9,6 +9,10 @@
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
@@ -47,6 +51,23 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function(){initNavTree('chunk_8h.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -68,16 +89,10 @@ $(function() {
 </div>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="dir_bfccd401955b95cf8c75461437045ac0.html">inc</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
-<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">chunk.h File Reference</div></div>
 </div><!--header-->
@@ -86,28 +101,29 @@ $(function() {
 <p>Definição de uma sequência de bytes (<em>bytecode</em>)  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="common_8h_source.html">common.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="value_8h_source.html">value.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="value__array_8h_source.html">value_array.h</a>&quot;</code><br />
 </div>
 <p><a href="chunk_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_line_start.html">LineStart</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Struct guardando informações sobre uma linha de código.  <a href="struct_line_start.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_chunk.html">Chunk</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Struct representando uma sequência de bytecodes.  <a href="struct_chunk.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:a6a69d1e1b18ca2609201816a81649fa7"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_line_start.html">LineStart</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#a6a69d1e1b18ca2609201816a81649fa7">LineStart</a></td></tr>
+<tr class="memdesc:a6a69d1e1b18ca2609201816a81649fa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Struct guardando informações sobre uma linha de código.  <br /></td></tr>
+<tr class="separator:a6a69d1e1b18ca2609201816a81649fa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3addd1f4caf0ce9547dc20e95664253"><td class="memItemLeft" align="right" valign="top"><a id="ac3addd1f4caf0ce9547dc20e95664253" name="ac3addd1f4caf0ce9547dc20e95664253"></a>
 typedef struct <a class="el" href="struct_chunk.html">Chunk</a>&#160;</td><td class="memItemRight" valign="bottom"><b>Chunk</b></td></tr>
 <tr class="memdesc:ac3addd1f4caf0ce9547dc20e95664253"><td class="mdescLeft">&#160;</td><td class="mdescRight">Struct representando uma sequência de bytecodes. <br /></td></tr>
 <tr class="separator:ac3addd1f4caf0ce9547dc20e95664253"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:abeb7dfb0e9e2b3114e240a405d046ea7"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#abeb7dfb0e9e2b3114e240a405d046ea7">OpCode</a> { <b>OP_RETURN</b> = 1
- }</td></tr>
-<tr class="memdesc:abeb7dfb0e9e2b3114e240a405d046ea7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enum representando todos os OpCodes possíveis.  <a href="chunk_8h.html#abeb7dfb0e9e2b3114e240a405d046ea7">More...</a><br /></td></tr>
-<tr class="separator:abeb7dfb0e9e2b3114e240a405d046ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -117,33 +133,82 @@ Functions</h2></td></tr>
 <tr class="memitem:a9f1cc34db015cff45c262783bf3e4e84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#a9f1cc34db015cff45c262783bf3e4e84">chunkFree</a> (<a class="el" href="struct_chunk.html">Chunk</a> *chunk)</td></tr>
 <tr class="memdesc:a9f1cc34db015cff45c262783bf3e4e84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Libera uma chunk da memória.  <br /></td></tr>
 <tr class="separator:a9f1cc34db015cff45c262783bf3e4e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e7a889e400552cf5d29206b64a458a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#a5e7a889e400552cf5d29206b64a458a4">chunkWrite</a> (<a class="el" href="struct_chunk.html">Chunk</a> *chunk, const uint8_t BYTE)</td></tr>
-<tr class="memdesc:a5e7a889e400552cf5d29206b64a458a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Coloca um byte na chunk.  <br /></td></tr>
-<tr class="separator:a5e7a889e400552cf5d29206b64a458a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f7891f6c413948a2852a543f46c4590"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#a9f7891f6c413948a2852a543f46c4590">chunkWrite</a> (<a class="el" href="struct_chunk.html">Chunk</a> *chunk, const uint8_t BYTE, const size_t LINE)</td></tr>
+<tr class="memdesc:a9f7891f6c413948a2852a543f46c4590"><td class="mdescLeft">&#160;</td><td class="mdescRight">Coloca um byte na chunk.  <br /></td></tr>
+<tr class="separator:a9f7891f6c413948a2852a543f46c4590"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40212b7e8915474063d53df760fdf7cd"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#a40212b7e8915474063d53df760fdf7cd">chunkAddConst</a> (<a class="el" href="struct_chunk.html">Chunk</a> *chunk, <a class="el" href="value_8h.html#a566a00621638570a4186414035153a2e">Value</a> value)</td></tr>
+<tr class="memdesc:a40212b7e8915474063d53df760fdf7cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adiciona um valor constante ao array de valores da chunk.  <br /></td></tr>
+<tr class="separator:a40212b7e8915474063d53df760fdf7cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab93caf4d8b799769c379d87e3bba1e47"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#ab93caf4d8b799769c379d87e3bba1e47">chunkWriteConst</a> (<a class="el" href="struct_chunk.html">Chunk</a> *chunk, <a class="el" href="value_8h.html#a566a00621638570a4186414035153a2e">Value</a> value, const size_t LINE)</td></tr>
+<tr class="memdesc:ab93caf4d8b799769c379d87e3bba1e47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adiciona uma instrução OP_CONST_* ao código e adiciona um valor constante ao array de valores, selecionando entre as versões 16- e 32-bit de acordo com a necessidade.  <br /></td></tr>
+<tr class="separator:ab93caf4d8b799769c379d87e3bba1e47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c9cd9296e4277fa8752dea2b419e89c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="chunk_8h.html#a2c9cd9296e4277fa8752dea2b419e89c">chunkGetLine</a> (<a class="el" href="struct_chunk.html">Chunk</a> *chunk, const size_t OFFSET)</td></tr>
+<tr class="memdesc:a2c9cd9296e4277fa8752dea2b419e89c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acha a linha onde um dado offset está localizado no código-fonte.  <br /></td></tr>
+<tr class="separator:a2c9cd9296e4277fa8752dea2b419e89c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Definição de uma sequência de bytes (<em>bytecode</em>) </p>
 <dl class="section author"><dt>Author</dt><dd>Pedro B. </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2024.04.01 </dd></dl>
-</div><h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="abeb7dfb0e9e2b3114e240a405d046ea7" name="abeb7dfb0e9e2b3114e240a405d046ea7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abeb7dfb0e9e2b3114e240a405d046ea7">&#9670;&#160;</a></span>OpCode</h2>
+</div><h2 class="groupheader">Typedef Documentation</h2>
+<a id="a6a69d1e1b18ca2609201816a81649fa7" name="a6a69d1e1b18ca2609201816a81649fa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a69d1e1b18ca2609201816a81649fa7">&#9670;&#160;</a></span>LineStart</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="chunk_8h.html#abeb7dfb0e9e2b3114e240a405d046ea7">OpCode</a></td>
+          <td class="memname">typedef struct <a class="el" href="struct_line_start.html">LineStart</a> <a class="el" href="struct_line_start.html">LineStart</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Enum representando todos os OpCodes possíveis. </p>
-<dl class="section note"><dt>Note</dt><dd>OpCodes não são tokens. Enquanto tokens representam uma unidade do código fonte, um OpCode é uma operação explícita realizada pela VM </dd></dl>
+<p>Struct guardando informações sobre uma linha de código. </p>
+<p>Este struct é usado para armazenar a linha de código de onde um bytecode veio, para que possamos mostrar ao programador a linha relevante quando encontramos um erro</p>
+<p>É implementado atráves da compressão <a href="https://pt.wikipedia.org/wiki/Codifica%C3%A7%C3%A3o_run-length">RLE</a>, evitando a repetição de linhas iguais </p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a40212b7e8915474063d53df760fdf7cd" name="a40212b7e8915474063d53df760fdf7cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40212b7e8915474063d53df760fdf7cd">&#9670;&#160;</a></span>chunkAddConst()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t chunkAddConst </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_chunk.html">Chunk</a> *&#160;</td>
+          <td class="paramname"><em>chunk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="value_8h.html#a566a00621638570a4186414035153a2e">Value</a>&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adiciona um valor constante ao array de valores da chunk. </p>
+<p>Este valor permanecerá no array até ser coletado pelo GC, e guarda números, strings, objetos e outros valores usados no código</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">chunk</td><td>Ponteiro pra chunk alvo </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">value</td><td>Valor que será adicionado</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Índice do valor no array de itens </dd></dl>
+
+</div>
+</div>
 <a id="a9f1cc34db015cff45c262783bf3e4e84" name="a9f1cc34db015cff45c262783bf3e4e84"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9f1cc34db015cff45c262783bf3e4e84">&#9670;&#160;</a></span>chunkFree()</h2>
 
@@ -163,10 +228,49 @@ Functions</h2></td></tr>
 <p>Libera uma chunk da memória. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">chunk</td><td>Ponteiro pra chunk que quer liberar </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">chunk</td><td>Ponteiro pra chunk que quer liberar </td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a2c9cd9296e4277fa8752dea2b419e89c" name="a2c9cd9296e4277fa8752dea2b419e89c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c9cd9296e4277fa8752dea2b419e89c">&#9670;&#160;</a></span>chunkGetLine()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t chunkGetLine </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_chunk.html">Chunk</a> *&#160;</td>
+          <td class="paramname"><em>chunk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>OFFSET</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Acha a linha onde um dado offset está localizado no código-fonte. </p>
+<p>Faz uma pesquisa binária do array de linhas numa chunk</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">chunk</td><td>Ponteiro pra chunk alvo </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">OFFSET</td><td>Offset do byte que desejamos encontrar</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Linha onde o offset se encontra </dd></dl>
 
 </div>
 </div>
@@ -196,8 +300,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5e7a889e400552cf5d29206b64a458a4" name="a5e7a889e400552cf5d29206b64a458a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e7a889e400552cf5d29206b64a458a4">&#9670;&#160;</a></span>chunkWrite()</h2>
+<a id="a9f7891f6c413948a2852a543f46c4590" name="a9f7891f6c413948a2852a543f46c4590"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f7891f6c413948a2852a543f46c4590">&#9670;&#160;</a></span>chunkWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -212,7 +316,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const uint8_t&#160;</td>
-          <td class="paramname"><em>BYTE</em>&#160;</td>
+          <td class="paramname"><em>BYTE</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>LINE</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -227,16 +337,66 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramdir">[out]</td><td class="paramname">chunk</td><td>Ponteiro pra chunk alvo </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">BYTE</td><td>Byte que será colocado na chunk </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">LINE</td><td>Linha de código de onde este byte vem </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
+<a id="ab93caf4d8b799769c379d87e3bba1e47" name="ab93caf4d8b799769c379d87e3bba1e47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab93caf4d8b799769c379d87e3bba1e47">&#9670;&#160;</a></span>chunkWriteConst()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t chunkWriteConst </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_chunk.html">Chunk</a> *&#160;</td>
+          <td class="paramname"><em>chunk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="value_8h.html#a566a00621638570a4186414035153a2e">Value</a>&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>LINE</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adiciona uma instrução OP_CONST_* ao código e adiciona um valor constante ao array de valores, selecionando entre as versões 16- e 32-bit de acordo com a necessidade. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">chunk</td><td>Ponteiro pra chunk alvo </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">value</td><td>Valor que será adicionado </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">LINE</td><td>Linha de código onde este valor foi declarado</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Índice do valor no array de itens </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
+</div><!-- doc-content -->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.7
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_bfccd401955b95cf8c75461437045ac0.html">inc</a></li><li class="navelem"><a class="el" href="chunk_8h.html">chunk.h</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.7 </li>
+  </ul>
+</div>
 </body>
 </html>

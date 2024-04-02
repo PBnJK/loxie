@@ -16,4 +16,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#ifdef NEAT_USE_32BIT_NUMBERS
+#else
+#endif
+
 #endif // GUARD_NEAT_COMMON_H
