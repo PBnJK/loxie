@@ -91,6 +91,7 @@ $(document).ready(function(){initNavTree('error_8h.html',''); initResizable(); }
 
 <div class="header">
   <div class="summary">
+<a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">error.h File Reference</div></div>
 </div><!--header-->
@@ -102,19 +103,41 @@ $(document).ready(function(){initNavTree('error_8h.html',''); initResizable(); }
 </div>
 <p><a href="error_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:ad86358bf19927183dd7b4ae215a29731"><td class="memItemLeft" align="right" valign="top"><a id="ad86358bf19927183dd7b4ae215a29731" name="ad86358bf19927183dd7b4ae215a29731"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>COLOR_RED</b>&#160;&#160;&#160;&quot;\033[0;31m&quot;</td></tr>
+<tr class="memdesc:ad86358bf19927183dd7b4ae215a29731"><td class="mdescLeft">&#160;</td><td class="mdescRight">Torna a cor do texto do terminal vermelha. <br /></td></tr>
+<tr class="separator:ad86358bf19927183dd7b4ae215a29731"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4534b577b74a58b0f4b7be027af664e0"><td class="memItemLeft" align="right" valign="top"><a id="a4534b577b74a58b0f4b7be027af664e0" name="a4534b577b74a58b0f4b7be027af664e0"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>COLOR_YELLOW</b>&#160;&#160;&#160;&quot;\033[0;33m&quot;</td></tr>
+<tr class="memdesc:a4534b577b74a58b0f4b7be027af664e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Torna a cor do texto do terminal amarela. <br /></td></tr>
+<tr class="separator:a4534b577b74a58b0f4b7be027af664e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc9149f5de51bd9ac4f5ebbfa153f018"><td class="memItemLeft" align="right" valign="top"><a id="afc9149f5de51bd9ac4f5ebbfa153f018" name="afc9149f5de51bd9ac4f5ebbfa153f018"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>COLOR_GREEN</b>&#160;&#160;&#160;&quot;\033[0;32m&quot;</td></tr>
+<tr class="memdesc:afc9149f5de51bd9ac4f5ebbfa153f018"><td class="mdescLeft">&#160;</td><td class="mdescRight">Torna a cor do texto do terminal verde. <br /></td></tr>
+<tr class="separator:afc9149f5de51bd9ac4f5ebbfa153f018"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17f760256046df23dd0ab46602f04d02"><td class="memItemLeft" align="right" valign="top"><a id="a17f760256046df23dd0ab46602f04d02" name="a17f760256046df23dd0ab46602f04d02"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>COLOR_RESET</b>&#160;&#160;&#160;&quot;\033[0m&quot;</td></tr>
+<tr class="memdesc:a17f760256046df23dd0ab46602f04d02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retorna a cor do texto do terminal pra cor original. <br /></td></tr>
+<tr class="separator:a17f760256046df23dd0ab46602f04d02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a209d4db9eb1faee0fcfb4845fcae2391"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="error_8h.html#a209d4db9eb1faee0fcfb4845fcae2391">errFatal</a> (const char *MSG, const uint8_t ERR_CODE)</td></tr>
-<tr class="memdesc:a209d4db9eb1faee0fcfb4845fcae2391"><td class="mdescLeft">&#160;</td><td class="mdescRight">Imprime a mensagem requisitada e sai do program com <em>ERR_CODE</em>.  <br /></td></tr>
-<tr class="separator:a209d4db9eb1faee0fcfb4845fcae2391"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae79a18932f87c4780fd7c28d251f41c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="error_8h.html#ae79a18932f87c4780fd7c28d251f41c8">errFatal</a> (const size_t LINE, const char *MSG,...)</td></tr>
+<tr class="memdesc:ae79a18932f87c4780fd7c28d251f41c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Imprime a mensagem requisitada e sai do program com <em>ERR_CODE</em>.  <br /></td></tr>
+<tr class="separator:ae79a18932f87c4780fd7c28d251f41c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83ae5bd5c6f8fb3b30e30a618e1e28a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="error_8h.html#a83ae5bd5c6f8fb3b30e30a618e1e28a0">errWarn</a> (const size_t LINE, const char *MSG,...)</td></tr>
+<tr class="memdesc:a83ae5bd5c6f8fb3b30e30a618e1e28a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Imprime a mensagem requisitada como um erro, sem sair do programa.  <br /></td></tr>
+<tr class="separator:a83ae5bd5c6f8fb3b30e30a618e1e28a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Helper para registro de erros. </p>
 <dl class="section author"><dt>Author</dt><dd>Pedro B. </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2024.04.01 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a209d4db9eb1faee0fcfb4845fcae2391" name="a209d4db9eb1faee0fcfb4845fcae2391"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a209d4db9eb1faee0fcfb4845fcae2391">&#9670;&#160;</a></span>errFatal()</h2>
+<a id="ae79a18932f87c4780fd7c28d251f41c8" name="ae79a18932f87c4780fd7c28d251f41c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae79a18932f87c4780fd7c28d251f41c8">&#9670;&#160;</a></span>errFatal()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -122,14 +145,20 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void errFatal </td>
           <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>LINE</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">const char *&#160;</td>
           <td class="paramname"><em>MSG</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const uint8_t&#160;</td>
-          <td class="paramname"><em>ERR_CODE</em>&#160;</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -140,11 +169,53 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Imprime a mensagem requisitada e sai do program com <em>ERR_CODE</em>. </p>
-<dl class="section note"><dt>Note</dt><dd>Use somente quando o erro for inrecuperável, como um malloc retornar NULL ou um overflow da pilha</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">LINE</td><td>Linha onde o erro ocorreu </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">MSG</td><td>Mensagem de erro que será posta na tela </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ERR_CODE</td><td>Código de erro (veja <a href="https://man.freebsd.org/cgi/man.cgi?query=sysexits&manpath=FreeBSD+4.3-RELEASE">https://man.freebsd.org/cgi/man.cgi?query=sysexits&amp;manpath=FreeBSD+4.3-RELEASE</a>) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a83ae5bd5c6f8fb3b30e30a618e1e28a0" name="a83ae5bd5c6f8fb3b30e30a618e1e28a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83ae5bd5c6f8fb3b30e30a618e1e28a0">&#9670;&#160;</a></span>errWarn()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void errWarn </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>LINE</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>MSG</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Imprime a mensagem requisitada como um erro, sem sair do programa. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">LINE</td><td>Linha onde o erro ocorreu </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">MSG</td><td>Mensagem de erro que será posta na tela </td></tr>
   </table>
   </dd>
 </dl>

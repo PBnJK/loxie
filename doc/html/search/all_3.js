@@ -1,8 +1,7 @@
 var searchData=
 [
-  ['line_0',['line',['../struct_line_start.html#ab523dd01a27a8030415732b21b2d3b5d',1,'LineStart']]],
-  ['linecount_1',['lineCount',['../struct_chunk.html#aec119e5337c3be12679629b21371ab39',1,'Chunk']]],
-  ['lines_2',['lines',['../struct_chunk.html#af1622dd8379089fc764bb739ab57a14b',1,'Chunk']]],
-  ['linesize_3',['lineSize',['../struct_chunk.html#a7ab7f9b98d438e455c9156a89f59cede',1,'Chunk']]],
-  ['linestart_4',['LineStart',['../struct_line_start.html',1,'LineStart'],['../chunk_8h.html#a6a69d1e1b18ca2609201816a81649fa7',1,'LineStart:&#160;chunk.h']]]
+  ['errfatal_0',['errFatal',['../error_8c.html#ae79a18932f87c4780fd7c28d251f41c8',1,'errFatal(const size_t LINE, const char *MSG,...):&#160;error.c'],['../error_8h.html#ae79a18932f87c4780fd7c28d251f41c8',1,'errFatal(const size_t LINE, const char *MSG,...):&#160;error.c']]],
+  ['error_2ec_1',['error.c',['../error_8c.html',1,'']]],
+  ['error_2eh_2',['error.h',['../error_8h.html',1,'']]],
+  ['errwarn_3',['errWarn',['../error_8c.html#a83ae5bd5c6f8fb3b30e30a618e1e28a0',1,'errWarn(const size_t LINE, const char *MSG,...):&#160;error.c'],['../error_8h.html#a83ae5bd5c6f8fb3b30e30a618e1e28a0',1,'errWarn(const size_t LINE, const char *MSG,...):&#160;error.c']]]
 ];

@@ -28,7 +28,8 @@ void *memRealloc( void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE ) 
 		 *
 		 * De qualquer forma, sai com código ERR_UNAVAILABLE
 		 */
-		errFatal("Não foi possível alocar memória!", 69);
+		errFatal(0, "Nao foi possivel alocar memoria!");
+		exit(69);
 	}
 
 	return result;

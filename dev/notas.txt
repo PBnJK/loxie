@@ -1,0 +1,5 @@
+Seguindo a dica nas notas do capítulo 15, quando implementarmos o compilador,
+manter um contador do número de variáveis ocupariam a pilha, e alocar somente
+o necessário para acomodar esse número
+
+No futuro, tentar fazer uma VM basead em registros?

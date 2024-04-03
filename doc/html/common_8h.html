@@ -90,6 +90,8 @@ $(document).ready(function(){initNavTree('common_8h.html',''); initResizable(); 
 </div>
 
 <div class="header">
+  <div class="summary">
+<a href="#define-members">Macros</a>  </div>
   <div class="headertitle"><div class="title">common.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -101,12 +103,37 @@ $(document).ready(function(){initNavTree('common_8h.html',''); initResizable(); 
 <code>#include &lt;stdbool.h&gt;</code><br />
 </div>
 <p><a href="common_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:aa9df27beb24bd22c213237155b49b58e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8h.html#aa9df27beb24bd22c213237155b49b58e">NEAT_NUMBER</a>&#160;&#160;&#160;double</td></tr>
+<tr class="memdesc:aa9df27beb24bd22c213237155b49b58e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Define o tipo usado para representar um número NEAT.  <br /></td></tr>
+<tr class="separator:aa9df27beb24bd22c213237155b49b58e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Cabeçalho com arquivos comuns a todo o projeto. </p>
 <dl class="section author"><dt>Author</dt><dd>Pedro B. </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2024.04.01</dd></dl>
 <p>Inclue cabeçalhos da biblioteca padrão (stdint, stdbool, etc,) além de definir algumas macros genéricas. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="aa9df27beb24bd22c213237155b49b58e" name="aa9df27beb24bd22c213237155b49b58e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9df27beb24bd22c213237155b49b58e">&#9670;&#160;</a></span>NEAT_NUMBER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define NEAT_NUMBER&#160;&#160;&#160;double</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Define o tipo usado para representar um número NEAT. </p>
+<p>Por padrão, usamos um double, que ocupa 64-bits Compile o neatc com -DNEAT_USE_32BIT_NUMBER caso queira usar floats 32-bits tradicionais </p>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

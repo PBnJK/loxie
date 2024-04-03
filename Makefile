@@ -58,6 +58,8 @@ endif
 
 # Compila
 all: $(OBJS)
+	doxygen.exe doc\doxyfile
+	@echo
 	@echo Linking $@
 	@echo ...
 	@echo

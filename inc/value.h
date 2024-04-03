@@ -19,8 +19,8 @@ typedef double Value;
 /**
  * @brief Imprime uma representação do valor dado na tela
  *
- * @param[in] value Ponteiro pro valor que deve ser impresso
+ * @param[in] value Valor que deve ser impresso
  */
-void valuePrint( Value *value );
+void valuePrint( Value value );
 
 #endif // GUARD_NEAT_VALUE_H

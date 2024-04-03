@@ -10,7 +10,7 @@
 
 #include "value.h"
 
-void valuePrint( Value *value ) {
-	printf("%g", *value);
+void valuePrint( Value value ) {
+	printf("%g", value);
 }
 

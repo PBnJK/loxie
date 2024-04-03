@@ -1,7 +1,25 @@
 var searchData=
 [
-  ['debug_2ec_0',['debug.c',['../debug_8c.html',1,'']]],
-  ['debug_2eh_1',['debug.h',['../debug_8h.html',1,'']]],
-  ['debugdisassemblechunk_2',['debugDisassembleChunk',['../debug_8c.html#a7572778904b9261acc51924da46fac8e',1,'debugDisassembleChunk(Chunk *chunk, const char *NAME):&#160;debug.c'],['../debug_8h.html#a7572778904b9261acc51924da46fac8e',1,'debugDisassembleChunk(Chunk *chunk, const char *NAME):&#160;debug.c']]],
-  ['debugdisassembleinstruction_3',['debugDisassembleInstruction',['../debug_8c.html#a7be9a164d6528ffce19b3446c6d4fab1',1,'debugDisassembleInstruction(Chunk *chunk, size_t offset):&#160;debug.c'],['../debug_8h.html#a7be9a164d6528ffce19b3446c6d4fab1',1,'debugDisassembleInstruction(Chunk *chunk, size_t offset):&#160;debug.c']]]
+  ['chunk_0',['Chunk',['../struct_chunk.html',1,'']]],
+  ['chunk_1',['chunk',['../struct_v_m.html#a445823b327e6ad0c98101de60ae9a91d',1,'VM']]],
+  ['chunk_2',['Chunk',['../chunk_8h.html#ac3addd1f4caf0ce9547dc20e95664253',1,'chunk.h']]],
+  ['chunk_2ec_3',['chunk.c',['../chunk_8c.html',1,'']]],
+  ['chunk_2eh_4',['chunk.h',['../chunk_8h.html',1,'']]],
+  ['chunkaddconst_5',['chunkAddConst',['../chunk_8h.html#a40212b7e8915474063d53df760fdf7cd',1,'chunkAddConst(Chunk *chunk, Value value):&#160;chunk.c'],['../chunk_8c.html#a40212b7e8915474063d53df760fdf7cd',1,'chunkAddConst(Chunk *chunk, Value value):&#160;chunk.c']]],
+  ['chunkfree_6',['chunkFree',['../chunk_8c.html#a9f1cc34db015cff45c262783bf3e4e84',1,'chunkFree(Chunk *chunk):&#160;chunk.c'],['../chunk_8h.html#a9f1cc34db015cff45c262783bf3e4e84',1,'chunkFree(Chunk *chunk):&#160;chunk.c']]],
+  ['chunkgetline_7',['chunkGetLine',['../chunk_8c.html#a2c9cd9296e4277fa8752dea2b419e89c',1,'chunkGetLine(Chunk *chunk, const size_t OFFSET):&#160;chunk.c'],['../chunk_8h.html#a2c9cd9296e4277fa8752dea2b419e89c',1,'chunkGetLine(Chunk *chunk, const size_t OFFSET):&#160;chunk.c']]],
+  ['chunkinit_8',['chunkInit',['../chunk_8c.html#a6bf8b55ccf4d727f63fa9f974c0e6172',1,'chunkInit(Chunk *chunk):&#160;chunk.c'],['../chunk_8h.html#a6bf8b55ccf4d727f63fa9f974c0e6172',1,'chunkInit(Chunk *chunk):&#160;chunk.c']]],
+  ['chunkwrite_9',['chunkWrite',['../chunk_8c.html#a9f7891f6c413948a2852a543f46c4590',1,'chunkWrite(Chunk *chunk, const uint8_t BYTE, const size_t LINE):&#160;chunk.c'],['../chunk_8h.html#a9f7891f6c413948a2852a543f46c4590',1,'chunkWrite(Chunk *chunk, const uint8_t BYTE, const size_t LINE):&#160;chunk.c']]],
+  ['chunkwriteconst_10',['chunkWriteConst',['../chunk_8c.html#ab93caf4d8b799769c379d87e3bba1e47',1,'chunkWriteConst(Chunk *chunk, Value value, const size_t LINE):&#160;chunk.c'],['../chunk_8h.html#ab93caf4d8b799769c379d87e3bba1e47',1,'chunkWriteConst(Chunk *chunk, Value value, const size_t LINE):&#160;chunk.c']]],
+  ['code_11',['code',['../struct_chunk.html#a3bd97432faba57c9187c7d264995b33f',1,'Chunk']]],
+  ['color_5fgreen_12',['COLOR_GREEN',['../error_8h.html#afc9149f5de51bd9ac4f5ebbfa153f018',1,'error.h']]],
+  ['color_5fred_13',['COLOR_RED',['../error_8h.html#ad86358bf19927183dd7b4ae215a29731',1,'error.h']]],
+  ['color_5freset_14',['COLOR_RESET',['../error_8h.html#a17f760256046df23dd0ab46602f04d02',1,'error.h']]],
+  ['color_5fyellow_15',['COLOR_YELLOW',['../error_8h.html#a4534b577b74a58b0f4b7be027af664e0',1,'error.h']]],
+  ['common_2eh_16',['common.h',['../common_8h.html',1,'']]],
+  ['compcompile_17',['compCompile',['../compiler_8c.html#a11df52b875c199469c87568f135bcfc6',1,'compiler.c']]],
+  ['compiler_2ec_18',['compiler.c',['../compiler_8c.html',1,'']]],
+  ['consts_19',['consts',['../struct_chunk.html#aa22d2035c1e05c3da2ef0455c3655054',1,'Chunk']]],
+  ['count_20',['count',['../struct_chunk.html#a204895ec1d6938143d35f422fda0b060',1,'Chunk::count'],['../struct_value_array.html#a2d921604faa3f0b699cf7103bc6dacb8',1,'ValueArray::count']]],
+  ['current_21',['CURRENT',['../struct_scanner.html#af73250eed494ab6e15f61e7b74d32239',1,'Scanner']]]
 ];

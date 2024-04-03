@@ -16,8 +16,19 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+/**
+ * @def NEAT_NUMBER
+ * @brief Define o tipo usado para representar um número NEAT
+ *
+ * Por padrão, usamos um double, que ocupa 64-bits
+ * Compile o neatc com -DNEAT_USE_32BIT_NUMBER caso queira usar floats
+ * 32-bits tradicionais
+ */
+
 #ifdef NEAT_USE_32BIT_NUMBERS
+	#define NEAT_NUMBER float
 #else
+	#define NEAT_NUMBER double
 #endif
 
 #endif // GUARD_NEAT_COMMON_H

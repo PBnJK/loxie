@@ -91,6 +91,7 @@ $(document).ready(function(){initNavTree('main_8c.html',''); initResizable(); })
 
 <div class="header">
   <div class="summary">
+<a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">main.c File Reference</div></div>
 </div><!--header-->
@@ -98,12 +99,20 @@ $(document).ready(function(){initNavTree('main_8c.html',''); initResizable(); })
 
 <p>Ponto de entrada do programa.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;stdio.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;stdlib.h&gt;</code><br />
+<code>#include &lt;string.h&gt;</code><br />
+<code>#include &lt;stdio.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="common_8h_source.html">common.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="chunk_8h_source.html">chunk.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="opcodes_8h_source.html">opcodes.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="debug_8h_source.html">debug.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="vm_8h_source.html">vm.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">error.h</a>&quot;</code><br />
 </div><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:a4931ac6d0fd7b031a22eb39e1eae4668"><td class="memItemLeft" align="right" valign="top"><a id="a4931ac6d0fd7b031a22eb39e1eae4668" name="a4931ac6d0fd7b031a22eb39e1eae4668"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>REPL_BUFFER</b>&#160;&#160;&#160;1024</td></tr>
+<tr class="memdesc:a4931ac6d0fd7b031a22eb39e1eae4668"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tamanho máximo de um comando durante a sessão REPL. <br /></td></tr>
+<tr class="separator:a4931ac6d0fd7b031a22eb39e1eae4668"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ac0f2228420376f4db7e1274f2b41667c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="main_8c.html#ac0f2228420376f4db7e1274f2b41667c">main</a> (int argc, const char *argv[])</td></tr>
@@ -142,7 +151,6 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Ponto de entrada da linguagem. </p>
-<p>Decide se a NEAT funcionará em modo REPL ou se interpretará um dado arquivo</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">argc</td><td>Quantidade de argumentos </td></tr>
