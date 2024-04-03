@@ -1,5 +1,5 @@
 /**
- * @file compiler.c
+ * @file compiler.h
  * @author Pedro B.
  * @date 2024.04.02
  *
