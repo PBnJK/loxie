@@ -23,11 +23,41 @@ typedef struct Scanner {
 
 Scanner scanner;	/**< Instância global do tokenizador */
 
+/**
+ * @brief Constrói uma string
+ * @return Token do tipo TOKEN_STRING
+ */
 static Token _string( void );
+
+/**
+ * @brief Constrói um número
+ * @return Token do tipo TOKEN_NUMBER
+ */
 static Token _number( void );
+
+/**
+ * @brief Constrói um identificador (palavra-chave ou nome definido pelo usuário)
+ * @return TOKEN_n, onde n é uma palavra-chave, ou um token genérico TOKEN_IDENTIFIER
+ */
 static Token _identifier( void );
 
-static Token _makeToken(TokenType type);
+
+/**
+ * @brief Cria um token do dado tipo
+ *
+ * @param[in] TYPE Tipo de token que será criado
+ *
+ * @return Token do tipo @a type
+ */
+static Token _makeToken( const TokenType TYPE );
+
+/**
+ * @brief Cria um token especial que representa um erro de compilação
+ *
+ * @param[in] MSG Mensagem de erro
+ *
+ * @return Token do tipo TOKEN_ERROR
+ */
 static Token _errorToken(const char *MSG);
 
 void scannerInit( const char *SOURCE ) {
@@ -170,6 +200,9 @@ static void _skipSpace( void ) {
  * @param[in] LENGTH Tamanho da palavra-chave
  * @param[in] REST Resto da palavra-chave
  * @param[in] EXPECTED Tipo de Token à qual a palavra-chave esperada pertence
+ *
+ * @return Se o lexema bater com a palavra-chave esperada, retorna @a EXPECTED.
+ * Caso contrário, retorna TOKEN_IDENTIFIER
  */
 static TokenType _checkKeyword( const size_t START, const size_t LENGTH,
 								const char *REST, const TokenType EXPECTED ) {
@@ -233,6 +266,8 @@ Token scanToken( void ) {
 			return _makeToken(TOKEN_STAR);
 		case '/':
 			return _makeToken(TOKEN_SLASH);
+		case '%':
+			return _makeToken(TOKEN_PERCENT);
 		case '!':
 			return _makeToken(_match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
 		case '=':
@@ -340,16 +375,16 @@ static Token _identifier( void ) {
 	return _makeToken( _getIdentifierType() );
 }
 
-static Token _makeToken(TokenType type) {
+static Token _makeToken( const TokenType TYPE ) {
 	return (Token){
-		.type   = type,
+		.type   = TYPE,
 		.START  = scanner.START,
 		.length = (size_t)(scanner.CURRENT - scanner.START),
 		.line   = scanner.line
 	};
 }
 
-static Token _errorToken(const char *MSG) {
+static Token _errorToken( const char *MSG ) {
 	return (Token){
 		.type   = TOKEN_ERROR,
 		.START  = MSG,

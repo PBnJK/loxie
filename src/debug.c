@@ -80,13 +80,14 @@ size_t debugDisassembleInstruction( Chunk *chunk, size_t offset ) {
 			return _simpleOp("OP_MUL", offset);
 		case OP_DIV:
 			return _simpleOp("OP_DIV", offset);
+		case OP_MOD:
+			return _simpleOp("OP_MOD", offset);
 		case OP_NEGATE:
 			return _simpleOp("OP_NEGATE", offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:
-			errWarn(LINE, "Instrucao desconhecida '");
-			printf("%02x'\n", OP);
+			errWarn(LINE, "Instrucao desconhecida '%02x'", OP);
 			return offset + 1;
 	}
 }

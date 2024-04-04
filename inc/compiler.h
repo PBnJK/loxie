@@ -10,12 +10,16 @@
 #define GUARD_NEAT_COMPILER_H
 
 #include "common.h"
+#include "chunk.h"
 
 /**
  * @brief Compila o código-fonte para bytecode
  *
  * @param[in] SOURCE Código-fonte que será compilado
+ * @param[in] chunk todo
+ *
+ * @return Verdadeiro se a compilação ocorreu sem erros
  */
-void compCompile( const char *SOURCE );
+bool compCompile( const char *SOURCE, Chunk *chunk );
 
 #endif // GUARD_NEAT_COMPILER_H

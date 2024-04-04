@@ -46,8 +46,8 @@ typedef enum {
 	TOKEN_INTERPOLATION = 24,	/**< String interpolada (f-strings) */
 	TOKEN_NUMBER        = 25,	/**< Um número */
 
-	TOKEN_AND           = 26,	/**< 'and', 'e' booleano */
-	TOKEN_OR            = 27,	/**< 'or', 'ou' booleano */
+	TOKEN_AND           = 26,	/**< 'and', 'e' lógico */
+	TOKEN_OR            = 27,	/**< 'or', 'ou' lógico */
 
 	TOKEN_TRUE          = 28,	/**< 'true', valor verdadeiro */
 	TOKEN_FALSE         = 29,	/**< 'falso', valor falso */

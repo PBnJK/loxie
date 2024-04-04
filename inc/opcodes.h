@@ -24,8 +24,9 @@ typedef enum {
 	OP_SUB      = 4,	/**< Subtrai dois operandos */
 	OP_MUL      = 5,	/**< Multiplica dois operandos */
 	OP_DIV      = 6,	/**< Divide dois operandos */
+	OP_MOD      = 7,	/**< Módulo de dois operandos (resto da divisão) */
 
-	OP_RETURN   = 7,	/**< Retorna de uma função */
+	OP_RETURN   = 8,	/**< Retorna de uma função */
 } OpCode;
 
 #endif // GUARD_NEAT_OPCODES_H

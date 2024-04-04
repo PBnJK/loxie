@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <math.h>
 
 #include "vm.h"
 #include "compiler.h"
@@ -17,6 +18,9 @@
 
 VM vm = {0};
 
+/**
+ * @brief Esvazia a pilha
+ */
 static void _resetStack( void ) {
 	vm.stackTop = vm.stack;
 }
@@ -38,8 +42,11 @@ Value vmPop( void ) {
 }
 
 #ifdef DEBUG_TRACE_EXECUTION
+
+/**
+ * @brief Imprime o estado atual da pilha
+ */
 static void _printStack( void ) {
-	printf("          ");
 	for( Value *slot = vm.stack; slot < vm.stackTop; ++slot ) {
 		printf("[");
 		valuePrint(*slot);
@@ -87,12 +94,19 @@ static Result _run( void ) {
 				BINARY_OP(/);
 				break;
 
+			case OP_MOD: {
+				double b = vmPop();
+				double a = vmPop();
+				vmPush(fmod(a, b));
+			} break;
+
 			case OP_NEGATE:
 				*(vm.stackTop - 1) = -(*(vm.stackTop - 1));
 				break;
 
 			case OP_RETURN:
 				valuePrint(vmPop());
+				printf("\n");
 				return RESULT_OK;
 
 			default:
@@ -105,6 +119,19 @@ static Result _run( void ) {
 }
 
 Result vmInterpret(const char *SOURCE) {
-	compCompile(SOURCE);
-	return RESULT_OK;
+	Chunk chunk;
+	chunkInit(&chunk);
+	
+	if( !compCompile(SOURCE, &chunk) ) {
+		chunkFree(&chunk);
+		return RESULT_COMPILER_ERROR;
+	}
+
+	vm.chunk = &chunk;
+	vm.pc    = vm.chunk->code;
+
+	const Result RESULT = _run();
+
+	chunkFree(&chunk);
+	return RESULT;
 }

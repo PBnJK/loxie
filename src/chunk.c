@@ -77,11 +77,18 @@ size_t chunkAddConst( Chunk *chunk, Value value ) {
 
 size_t chunkWriteConst( Chunk *chunk, Value value, const size_t LINE ) {
 	const size_t INDEX = chunkAddConst(chunk, value);
-
+	
+	/* Se o índice não cabe em um byte (> 255), guardamos em um número
+	 * 24-bit (até 16.777.216 valores possíveis), guardado em 3 bytes separadas,
+	 * o que é mais do que o bastante.
+	 *
+	 * O OpCode se chama OP_CONST_32 porque, junto ao OpCode em si, que toma
+	 * 1 byte, a operação inteira ocupa 32 bits
+	 */
 	if( INDEX > UINT8_MAX ) {
 		chunkWrite(chunk, OP_CONST_32, LINE);
 		chunkWrite(chunk, (uint8_t)(INDEX & 0xFF), LINE);
-		chunkWrite(chunk, (uint8_t)((INDEX >> 8 ) & 0xFF), LINE);
+		chunkWrite(chunk, (uint8_t)((INDEX >> 8) & 0xFF), LINE);
 		chunkWrite(chunk, (uint8_t)((INDEX >> 16) & 0xFF), LINE);
 	} else {
 		chunkWrite(chunk, OP_CONST_16, LINE);

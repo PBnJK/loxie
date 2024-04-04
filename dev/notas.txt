@@ -1,5 +1,9 @@
 Seguindo a dica nas notas do capítulo 15, quando implementarmos o compilador,
-manter um contador do número de variáveis ocupariam a pilha, e alocar somente
+manter um contador com o espaço total que ocupará a pilha, e alocar somente
 o necessário para acomodar esse número
 
 No futuro, tentar fazer uma VM basead em registros?
+
+Lidar com \n, \t, \a, etc...
+
+escrever mini fmod, porque o cabeçalho math.h é enorme...
