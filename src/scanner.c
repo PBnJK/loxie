@@ -264,6 +264,10 @@ Token scanToken(void) {
 			return _makeToken(TOKEN_SLASH);
 		case '%':
 			return _makeToken(TOKEN_PERCENT);
+		case '?':
+			return _makeToken(TOKEN_QUESTION);
+		case ':':
+			return _makeToken(TOKEN_COLON);
 		case '!':
 			return _makeToken(_match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
 		case '=':

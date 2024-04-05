@@ -196,6 +196,12 @@ static void _binary(void) {
 	}
 }
 
+static void _conditional( void ) {
+	_precedence(PREC_CONDITIONAL);
+	_consume(TOKEN_COLON, "Esperava ':'");
+	_precedence(PREC_ASSIGNMENT);
+}
+
 /**
  * @brief Array com as regras que serão usadas na compilação da linguagem
  */
@@ -250,6 +256,8 @@ ParseRule rules[] = {
 
 	[TOKEN_IF] = {NULL, NULL, PREC_NONE},
 	[TOKEN_ELSE] = {NULL, NULL, PREC_NONE},
+	[TOKEN_QUESTION] = {NULL, _conditional, PREC_CONDITIONAL},
+//	[TOKEN_COLON] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LET] = {NULL, NULL, PREC_NONE},
@@ -293,8 +301,6 @@ static void _errorAt(Token* token, const char* MSG) {
 	}
 
 	parser.hadError = parser.panicked = true;
-
-	errFatal(token->line, MSG);
 
 	if (token->type == TOKEN_EOF) {
 		errFatal(token->line, "%s\n\t~ no final da linha", MSG);
