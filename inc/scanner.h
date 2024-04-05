@@ -17,14 +17,13 @@
  *
  * @param[in] SOURCE Código-fonte que será tokenizado
  */
-void scannerInit( const char *SOURCE );
+void scannerInit(const char *SOURCE);
 
 /**
  * @brief Scans a token
  *
  * @return Scanned token
  */
-Token scanToken( void );
+Token scanToken(void);
 
-#endif // GUARD_NEAT_SCANNER_H
-
+#endif	// GUARD_NEAT_SCANNER_H

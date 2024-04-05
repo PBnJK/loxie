@@ -6,11 +6,8 @@
  * @brief Representação de valores da linguagem
  */
 
-#include <stdio.h>
-
 #include "value.h"
 
-void valuePrint( Value value ) {
-	printf("%g", value);
-}
+#include <stdio.h>
 
+void valuePrint(Value value) { printf("%g", value); }

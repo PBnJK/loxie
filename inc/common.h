@@ -4,7 +4,7 @@
  * @date 2024.04.01
  *
  * @brief Cabeçalho com arquivos comuns a todo o projeto
- * 
+ *
  * Inclue cabeçalhos da biblioteca padrão (stdint, stdbool, etc,)
  * além de definir algumas macros genéricas.
  */
@@ -12,9 +12,9 @@
 #ifndef GUARD_NEAT_COMMON_H
 #define GUARD_NEAT_COMMON_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @def NEAT_NUMBER
@@ -26,9 +26,9 @@
  */
 
 #ifdef NEAT_USE_32BIT_NUMBERS
-	#define NEAT_NUMBER float
+#define NEAT_NUMBER float
 #else
-	#define NEAT_NUMBER double
+#define NEAT_NUMBER double
 #endif
 
-#endif // GUARD_NEAT_COMMON_H
+#endif	// GUARD_NEAT_COMMON_H

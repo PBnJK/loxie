@@ -23,6 +23,7 @@ SRC := $(BASE)/src
 INC := $(BASE)/inc
 OUT := $(BASE)/out
 OBJ := $(BASE)/obj
+DOC := $(BASE)/doc
 
 CFLAGS += -I$(INC)
 
@@ -54,11 +55,10 @@ endif
 
 # -- Main --
 
-.PHONY: all clean fresh
+.PHONY: all clean reformat document fresh
 
 # Compila
 all: $(OBJS)
-	doxygen.exe doc\doxyfile
 	@echo
 	@echo Linking $@
 	@echo ...
@@ -83,7 +83,18 @@ clean:
 	$(RM) $(OBJ)/*.o
 	clear
 
+# Reformat
+# Reformata o código usando clang-format
+reformat:
+	clang-format $(SRC)/*.c -style=file -i
+	clang-format $(INC)/*.h -style=file -i
+
+# Document
+# Compila a documentação usando o doxygen
+document:
+	doxygen $(DOC)/doxyfile
+	
 # Fresh
-# Limpa os objetos/exe e compila de novo
-fresh: clean all
+# Limpa os objetos/exe, reformat o código, documenta e compila de novo
+fresh: clean reformat document all
 

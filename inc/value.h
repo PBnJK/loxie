@@ -21,6 +21,6 @@ typedef double Value;
  *
  * @param[in] value Valor que deve ser impresso
  */
-void valuePrint( Value value );
+void valuePrint(Value value);
 
-#endif // GUARD_NEAT_VALUE_H
+#endif	// GUARD_NEAT_VALUE_H

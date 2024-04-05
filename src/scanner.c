@@ -6,41 +6,42 @@
  * @brief Tokenizador de código da linguagem NEAT
  */
 
+#include "scanner.h"
+
 #include <stdio.h>
 #include <string.h>
-
-#include "scanner.h"
 
 /**
  * @brief Struct representando o tokenizador
  */
 typedef struct Scanner {
-	const char *START;		/**< Primeiro caractere do lexema atual */
-	const char *CURRENT;	/**< Caractere atual do lexema que atual*/
+	const char* START;	 /**< Primeiro caractere do lexema atual */
+	const char* CURRENT; /**< Caractere atual do lexema que atual*/
 
-	size_t line;			/**< Linha atual */
+	size_t line; /**< Linha atual */
 } Scanner;
 
-Scanner scanner;	/**< Instância global do tokenizador */
+Scanner scanner; /**< Instância global do tokenizador */
 
 /**
  * @brief Constrói uma string
  * @return Token do tipo TOKEN_STRING
  */
-static Token _string( void );
+static Token _string(void);
 
 /**
  * @brief Constrói um número
  * @return Token do tipo TOKEN_NUMBER
  */
-static Token _number( void );
+static Token _number(void);
 
 /**
- * @brief Constrói um identificador (palavra-chave ou nome definido pelo usuário)
- * @return TOKEN_n, onde n é uma palavra-chave, ou um token genérico TOKEN_IDENTIFIER
+ * @brief Constrói um identificador (palavra-chave ou nome definido pelo
+ * usuário)
+ * @return TOKEN_n, onde n é uma palavra-chave, ou um token genérico
+ * TOKEN_IDENTIFIER
  */
-static Token _identifier( void );
-
+static Token _identifier(void);
 
 /**
  * @brief Cria um token do dado tipo
@@ -49,7 +50,7 @@ static Token _identifier( void );
  *
  * @return Token do tipo @a type
  */
-static Token _makeToken( const TokenType TYPE );
+static Token _makeToken(const TokenType TYPE);
 
 /**
  * @brief Cria um token especial que representa um erro de compilação
@@ -58,20 +59,18 @@ static Token _makeToken( const TokenType TYPE );
  *
  * @return Token do tipo TOKEN_ERROR
  */
-static Token _errorToken(const char *MSG);
+static Token _errorToken(const char* MSG);
 
-void scannerInit( const char *SOURCE ) {
+void scannerInit(const char* SOURCE) {
 	scanner.START = scanner.CURRENT = SOURCE;
-	scanner.line  = 1;
+	scanner.line = 1;
 }
 
 /**
  * @brief Verifica se chegamos no fim do código
  * @return Verdadeiro se chegamos no final
  */
-static bool _atEnd( void ) {
-	return *scanner.CURRENT == '\0';
-}
+static bool _atEnd(void) { return *scanner.CURRENT == '\0'; }
 
 /**
  * @brief Verifica se um dado caractere é numérico
@@ -79,9 +78,7 @@ static bool _atEnd( void ) {
  * @param[in] CHAR Caractere que será verificado
  * @return Verdadeiro se o caractere for um número
  */
-static bool _isDigit( const char CHAR ) {
-	return CHAR >= '0' && CHAR <= '9';
-}
+static bool _isDigit(const char CHAR) { return CHAR >= '0' && CHAR <= '9'; }
 
 /**
  * @brief Verifica se um dado caractere é uma letra
@@ -89,9 +86,8 @@ static bool _isDigit( const char CHAR ) {
  * @param[in] CHAR Caractere que será verificado
  * @return Verdadeiro se o caractere for uma letra
  */
-static bool _isAlpha( const char CHAR ) {
-	return ( CHAR >= 'a' && CHAR <= 'z' ) ||
-		   ( CHAR >= 'A' && CHAR <= 'Z' ) ||
+static bool _isAlpha(const char CHAR) {
+	return (CHAR >= 'a' && CHAR <= 'z') || (CHAR >= 'A' && CHAR <= 'Z') ||
 		   CHAR == '_';
 }
 
@@ -101,7 +97,7 @@ static bool _isAlpha( const char CHAR ) {
  * @param[in] CHAR Caractere que será verificado
  * @return Verdadeiro se o caractere for um número ou uma letra
  */
-static bool _isAlphanumeric( const char CHAR ) {
+static bool _isAlphanumeric(const char CHAR) {
 	return _isAlpha(CHAR) || _isDigit(CHAR);
 }
 
@@ -109,7 +105,7 @@ static bool _isAlphanumeric( const char CHAR ) {
  * @brief Avança o caractere atual
  * @return Caractere logo atrás do atual
  */
-static char _advance( void ) {
+static char _advance(void) {
 	return *(scanner.CURRENT++);
 }
 
@@ -117,16 +113,14 @@ static char _advance( void ) {
  * @brief Vê o caractere atual, sem avançar
  * @return O caractere atual
  */
-static char _peek( void ) {
-	return *scanner.CURRENT;
-}
+static char _peek(void) { return *scanner.CURRENT; }
 
 /**
  * @brief Vê o próximo caractere, sem avançar
  * @return O caractere a frente ou '\0', caso tenhamos chegado ao fim do código
  */
-static char _peekNext( void ) {
-	if( _atEnd() ) {
+static char _peekNext(void) {
+	if (_atEnd()) {
 		return '\0';
 	}
 
@@ -139,8 +133,8 @@ static char _peekNext( void ) {
  * @param[in] EXPECTED Caractere esperado
  * @return Verdadeiro se o caractere atual for igual à @a EXPECTED
  */
-static bool _match( const char EXPECTED ) {
-	if( _atEnd() || *scanner.CURRENT != EXPECTED ) {
+static bool _match(const char EXPECTED) {
+	if (_atEnd() || *scanner.CURRENT != EXPECTED) {
 		return false;
 	}
 
@@ -151,11 +145,11 @@ static bool _match( const char EXPECTED ) {
 /**
  * @brief Pula um comentário de múltiplas linhas estilo C
  */
-static void _skipCommentBlock( void ) {
-	while( !_atEnd() ) {
+static void _skipCommentBlock(void) {
+	while (!_atEnd()) {
 		const char CHAR = _advance();
 
-		if( CHAR == '*' && _peekNext() == '/' ) {
+		if (CHAR == '*' && _peekNext() == '/') {
 			return;
 		}
 	}
@@ -164,10 +158,10 @@ static void _skipCommentBlock( void ) {
 /**
  * @brief Pula espaços vazios/comentários
  */
-static void _skipSpace( void ) {
-	while(true) {
+static void _skipSpace(void) {
+	while (true) {
 		const char CHAR = _peek();
-		switch(CHAR) {
+		switch (CHAR) {
 			case ' ':
 			case '\t':
 			case '\r':
@@ -178,9 +172,10 @@ static void _skipSpace( void ) {
 				_advance();
 				break;
 			case '/':
-				if( _peekNext() == '/' ) {
-					while( !_atEnd() && _advance() != '\n' );
-				} else if ( _peekNext() == '*' ) {
+				if (_peekNext() == '/') {
+					while (!_atEnd() && _advance() != '\n')
+						;
+				} else if (_peekNext() == '*') {
 					_skipCommentBlock();
 				} else {
 					return;
@@ -204,42 +199,39 @@ static void _skipSpace( void ) {
  * @return Se o lexema bater com a palavra-chave esperada, retorna @a EXPECTED.
  * Caso contrário, retorna TOKEN_IDENTIFIER
  */
-static TokenType _checkKeyword( const size_t START, const size_t LENGTH,
-								const char *REST, const TokenType EXPECTED ) {
+static TokenType _checkKeyword(const size_t START, const size_t LENGTH,
+							   const char* REST, const TokenType EXPECTED) {
 	/* Comparamos o tamanho das strings primeiro aqui para agilizar o processo
-	 * Se não forem iguais, o memcmp (operação demorada...) é pulado e retornamos
-	 * TOKEN_IDENTIFIER direto
+	 * Se não forem iguais, o memcmp (operação demorada...) é pulado e
+	 * retornamos TOKEN_IDENTIFIER direto
 	 */
-	if( (size_t)( scanner.CURRENT - scanner.START ) == ( START + LENGTH ) &&
-		memcmp(scanner.START + START, REST, LENGTH) == 0 ) {
+	if ((size_t)(scanner.CURRENT - scanner.START) == (START + LENGTH) &&
+		memcmp(scanner.START + START, REST, LENGTH) == 0) {
 		return EXPECTED;
 	}
 
 	return TOKEN_IDENTIFIER;
 }
 
-Token scanToken( void ) {
+Token scanToken(void) {
 	_skipSpace();
 
 	scanner.START = scanner.CURRENT;
-
-	const char CHAR = _advance();
-
-	if( _isDigit(CHAR) ) {
-		return _number();
-	}
-
-	if( _isAlpha(CHAR) ) {
-		return _identifier();
-	}
-
-	if( _atEnd() ) {
+	if (_atEnd()) {
 		return _makeToken(TOKEN_EOF);
 	}
 
-	switch(CHAR) {
-		case '\0':
-			return _makeToken(TOKEN_EOF);
+	const char CHAR = _advance();
+
+	if (_isDigit(CHAR)) {
+		return _number();
+	}
+
+	if (_isAlpha(CHAR)) {
+		return _identifier();
+	}
+
+	switch (CHAR) {
 		case '(':
 			return _makeToken(TOKEN_LPAREN);
 		case ')':
@@ -252,6 +244,10 @@ Token scanToken( void ) {
 			return _makeToken(TOKEN_LBRACE);
 		case '}':
 			return _makeToken(TOKEN_RBRACE);
+		case '$':
+			return _makeToken(TOKEN_DOLLAR);
+		case '#':
+			return _makeToken(TOKEN_HASH);
 		case ',':
 			return _makeToken(TOKEN_COMMA);
 		case '.':
@@ -275,25 +271,26 @@ Token scanToken( void ) {
 		case '<':
 			return _makeToken(_match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
 		case '>':
-			return _makeToken(_match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+			return _makeToken(_match('=') ? TOKEN_GREATER_EQUAL
+										  : TOKEN_GREATER);
 		case '"':
 			return _string();
 	}
-	
+
 	/* Nenhum caractere combinou, retornamos um erro */
 	return _errorToken("Caractere inesperado encontrado");
 }
 
-static Token _string( void ) {
-	while( _peek() != '"' && !_atEnd() ) {
-		if( _peek() == '\n' ) {
+static Token _string(void) {
+	while (_peek() != '"' && !_atEnd()) {
+		if (_peek() == '\n') {
 			++scanner.line;
 		}
 
 		_advance();
 	}
 
-	if( _atEnd() ) {
+	if (_atEnd()) {
 		return _errorToken("String se aspas finais");
 	}
 
@@ -301,24 +298,24 @@ static Token _string( void ) {
 	return _makeToken(TOKEN_STRING);
 }
 
-static Token _number( void ) {
-	while( _isDigit( _peek() ) ) {
+static Token _number(void) {
+	while (_isDigit(_peek())) {
 		_advance();
 	}
 
-	if( _peek() == '.' && _isDigit( _peekNext() ) ) {
+	if (_peek() == '.' && _isDigit(_peekNext())) {
 		_advance();
 	}
 
-	while( _isDigit( _peek() ) ) {
+	while (_isDigit(_peek())) {
 		_advance();
 	}
 
-	return _makeToken(TOKEN_NUMBER);	
+	return _makeToken(TOKEN_NUMBER);
 }
 
-static TokenType _getIdentifierType( void ) {
-	switch( *scanner.START ) {
+static TokenType _getIdentifierType(void) {
+	switch (*scanner.START) {
 		case 'a':
 			return _checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c':
@@ -326,13 +323,16 @@ static TokenType _getIdentifierType( void ) {
 		case 'e':
 			return _checkKeyword(1, 3, "lse", TOKEN_ELSE);
 		case 'f':
-			if( scanner.CURRENT - scanner.START > 1 ) {
+			if (scanner.CURRENT - scanner.START > 1) {
 				switch (scanner.START[1]) {
-					case 'a': return _checkKeyword(2, 3, "lse", TOKEN_FALSE);
-					case 'o': return _checkKeyword(2, 1, "r", TOKEN_FOR);
-					case 'n': return ( scanner.CURRENT - scanner.START ) ?
-									 TOKEN_FN :
-									 TOKEN_IDENTIFIER;
+					case 'a':
+						return _checkKeyword(2, 3, "lse", TOKEN_FALSE);
+					case 'o':
+						return _checkKeyword(2, 1, "r", TOKEN_FOR);
+					case 'n':
+						return (scanner.CURRENT - scanner.START)
+								   ? TOKEN_FN
+								   : TOKEN_IDENTIFIER;
 				}
 			}
 
@@ -352,10 +352,12 @@ static TokenType _getIdentifierType( void ) {
 		case 's':
 			return _checkKeyword(1, 4, "uper", TOKEN_SUPER);
 		case 't':
-			if( scanner.CURRENT - scanner.START > 1) {
-				switch( scanner.START[1] ) {
-					case 'h': return _checkKeyword(2, 2, "is", TOKEN_THIS);
-					case 'r': return _checkKeyword(2, 2, "ue", TOKEN_TRUE);
+			if (scanner.CURRENT - scanner.START > 1) {
+				switch (scanner.START[1]) {
+					case 'h':
+						return _checkKeyword(2, 2, "is", TOKEN_THIS);
+					case 'r':
+						return _checkKeyword(2, 2, "ue", TOKEN_TRUE);
 				}
 			}
 
@@ -367,29 +369,24 @@ static TokenType _getIdentifierType( void ) {
 	return TOKEN_IDENTIFIER;
 }
 
-static Token _identifier( void ) {
-	while( _isAlphanumeric( _peek() ) ) {
+static Token _identifier(void) {
+	while (_isAlphanumeric(_peek())) {
 		_advance();
 	}
 
-	return _makeToken( _getIdentifierType() );
+	return _makeToken(_getIdentifierType());
 }
 
-static Token _makeToken( const TokenType TYPE ) {
-	return (Token){
-		.type   = TYPE,
-		.START  = scanner.START,
-		.length = (size_t)(scanner.CURRENT - scanner.START),
-		.line   = scanner.line
-	};
+static Token _makeToken(const TokenType TYPE) {
+	return (Token){.type = TYPE,
+				   .START = scanner.START,
+				   .length = (size_t)(scanner.CURRENT - scanner.START),
+				   .line = scanner.line};
 }
 
-static Token _errorToken( const char *MSG ) {
-	return (Token){
-		.type   = TOKEN_ERROR,
-		.START  = MSG,
-		.length = strlen(MSG),
-		.line   = scanner.line
-	};
+static Token _errorToken(const char* MSG) {
+	return (Token){.type = TOKEN_ERROR,
+				   .START = MSG,
+				   .length = strlen(MSG),
+				   .line = scanner.line};
 }
-

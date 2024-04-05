@@ -9,8 +9,8 @@
 #ifndef GUARD_NEAT_DEBUG_H
 #define GUARD_NEAT_DEBUG_H
 
-#include "common.h"
 #include "chunk.h"
+#include "common.h"
 
 /**
  * @brief Desconstrói uma chunk
@@ -20,7 +20,7 @@
  * @param[in] chunk Ponteiro pra chunk que quer desconstruir
  * @param[in] NAME Nome da chunk
  */
-void debugDisassembleChunk( Chunk *chunk, const char *NAME );
+void debugDisassembleChunk(Chunk *chunk, const char *NAME);
 
 /**
  * @brief Desconstrói uma instrução
@@ -33,6 +33,6 @@ void debugDisassembleChunk( Chunk *chunk, const char *NAME );
  *
  * @return Índice da próxima instrução
  */
-size_t debugDisassembleInstruction( Chunk *chunk, size_t offset );
+size_t debugDisassembleInstruction(Chunk *chunk, size_t offset);
 
-#endif // GUARD_NEAT_DEBUG_H
+#endif	// GUARD_NEAT_DEBUG_H

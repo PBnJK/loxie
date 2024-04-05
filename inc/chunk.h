@@ -25,23 +25,23 @@
  * evitando a repetição de linhas iguais
  */
 typedef struct LineStart {
-	size_t offset;	/**< Offset no código para onde esta linha aponta */
-	size_t line;	/**< Número da linha */
+	size_t offset; /**< Offset no código para onde esta linha aponta */
+	size_t line;   /**< Número da linha */
 } LineStart;
 
 /**
  * @brief Struct representando uma sequência de bytecodes
  */
 typedef struct Chunk {
-	size_t count;		/**< Ocupação atual do array de bytes */
-	size_t size;		/**< Tamanho do array de bytes */
-	uint8_t *code;		/**< Array de bytes */
+	size_t count;  /**< Ocupação atual do array de bytes */
+	size_t size;   /**< Tamanho do array de bytes */
+	uint8_t *code; /**< Array de bytes */
 
-	ValueArray consts;	/**< Array de valores constantes */
+	ValueArray consts; /**< Array de valores constantes */
 
-	size_t lineCount;	/**< Ocupação atual do array de linhas */
-	size_t lineSize;	/**< Tamanho do array de linhas */
-	LineStart *lines;	/**< Array de linhas */
+	size_t lineCount; /**< Ocupação atual do array de linhas */
+	size_t lineSize;  /**< Tamanho do array de linhas */
+	LineStart *lines; /**< Array de linhas */
 } Chunk;
 
 /**
@@ -49,14 +49,14 @@ typedef struct Chunk {
  *
  * @param[out] chunk Ponteiro pra chunk que quer inicializar
  */
-void chunkInit( Chunk *chunk );
+void chunkInit(Chunk *chunk);
 
 /**
  * @brief Libera uma chunk da memória
  *
  * @param[out] chunk Ponteiro pra chunk que quer liberar
  */
-void chunkFree( Chunk *chunk );
+void chunkFree(Chunk *chunk);
 
 /**
  * @brief Coloca um byte na chunk
@@ -65,7 +65,7 @@ void chunkFree( Chunk *chunk );
  * @param[in] BYTE Byte que será colocado na chunk
  * @param[in] LINE Linha de código de onde este byte vem
  */
-void chunkWrite( Chunk *chunk, const uint8_t BYTE, const size_t LINE );
+void chunkWrite(Chunk *chunk, const uint8_t BYTE, const size_t LINE);
 
 /**
  * @brief Adiciona um valor constante ao array de valores da chunk
@@ -78,7 +78,7 @@ void chunkWrite( Chunk *chunk, const uint8_t BYTE, const size_t LINE );
  *
  * @return Índice do valor no array de itens
  */
-size_t chunkAddConst( Chunk *chunk, Value value );
+size_t chunkAddConst(Chunk *chunk, Value value);
 
 /**
  * @brief Adiciona uma instrução OP_CONST_* ao código e adiciona um valor
@@ -91,7 +91,7 @@ size_t chunkAddConst( Chunk *chunk, Value value );
  *
  * @return Índice do valor no array de itens
  */
-size_t chunkWriteConst( Chunk *chunk, Value value, const size_t LINE );
+size_t chunkWriteConst(Chunk *chunk, Value value, const size_t LINE);
 
 /**
  * @brief Acha a linha onde um dado offset está localizado no código-fonte
@@ -103,7 +103,6 @@ size_t chunkWriteConst( Chunk *chunk, Value value, const size_t LINE );
  *
  * @return Linha onde o offset se encontra
  */
-size_t chunkGetLine( Chunk *chunk, const size_t OFFSET );
+size_t chunkGetLine(Chunk *chunk, const size_t OFFSET);
 
-#endif // GUARD_NEAT_CHUNK_H
-
+#endif	// GUARD_NEAT_CHUNK_H

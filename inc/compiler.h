@@ -9,8 +9,8 @@
 #ifndef GUARD_NEAT_COMPILER_H
 #define GUARD_NEAT_COMPILER_H
 
-#include "common.h"
 #include "chunk.h"
+#include "common.h"
 
 /**
  * @brief Compila o código-fonte para bytecode
@@ -20,6 +20,6 @@
  *
  * @return Verdadeiro se a compilação ocorreu sem erros
  */
-bool compCompile( const char *SOURCE, Chunk *chunk );
+bool compCompile(const char *SOURCE, Chunk *chunk);
 
-#endif // GUARD_NEAT_COMPILER_H
+#endif	// GUARD_NEAT_COMPILER_H

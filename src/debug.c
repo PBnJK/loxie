@@ -6,11 +6,12 @@
  * @brief Funções para auxiliar o desenvolvimento
  */
 
+#include "debug.h"
+
 #include <stdio.h>
 
-#include "debug.h"
-#include "opcodes.h"
 #include "error.h"
+#include "opcodes.h"
 
 /**
  * @brief Imprime uma operação sem operandos
@@ -20,7 +21,7 @@
  *
  * @return O próximo índice
  */
-static size_t _simpleOp( const char *NAME, size_t offset );
+static size_t _simpleOp(const char* NAME, size_t offset);
 
 /**
  * @brief Imprime uma operação com um operando que é um índice no array
@@ -32,7 +33,7 @@ static size_t _simpleOp( const char *NAME, size_t offset );
  *
  * @return O próximo índice, pulando a instrução + índice
  */
-static size_t _const16Op( const char *NAME, Chunk *chunk, size_t offset );
+static size_t _const16Op(const char* NAME, Chunk* chunk, size_t offset);
 
 /**
  * @brief Mesmo que @ref _Const16Op, mas com um índice 24-bit
@@ -43,21 +44,21 @@ static size_t _const16Op( const char *NAME, Chunk *chunk, size_t offset );
  *
  * @return O próximo índice, pulando a instrução + índice
  */
-static size_t _const32Op( const char *NAME, Chunk *chunk, size_t offset );
+static size_t _const32Op(const char* NAME, Chunk* chunk, size_t offset);
 
-void debugDisassembleChunk( Chunk *chunk, const char *NAME ) {
+void debugDisassembleChunk(Chunk* chunk, const char* NAME) {
 	printf("=== %s ===\n", NAME);
-	
-	for( size_t offset = 0; offset < chunk->count; ) {
+
+	for (size_t offset = 0; offset < chunk->count;) {
 		offset = debugDisassembleInstruction(chunk, offset);
 	}
 }
 
-size_t debugDisassembleInstruction( Chunk *chunk, size_t offset ) {
+size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 	printf("%04d ", offset);
 	const size_t LINE = chunkGetLine(chunk, offset);
 
-	if( offset > 0 && LINE == chunkGetLine(chunk, offset - 1) ) {
+	if (offset > 0 && LINE == chunkGetLine(chunk, offset - 1)) {
 		/* Linha é a mesma que a da mesma instrução.
 		 * Imprime uma linha pra deixar mais legível
 		 */
@@ -67,7 +68,7 @@ size_t debugDisassembleInstruction( Chunk *chunk, size_t offset ) {
 	}
 
 	const uint8_t OP = chunk->code[offset];
-	switch(OP) {
+	switch (OP) {
 		case OP_CONST_16:
 			return _const16Op("OP_CONST_16", chunk, offset);
 		case OP_CONST_32:
@@ -92,14 +93,14 @@ size_t debugDisassembleInstruction( Chunk *chunk, size_t offset ) {
 	}
 }
 
-static size_t _simpleOp( const char *NAME, size_t offset ) {
+static size_t _simpleOp(const char* NAME, size_t offset) {
 	printf("%-16s\n", NAME);
 	return offset + 1;
 }
 
-static size_t _const16Op( const char *NAME, Chunk *chunk, size_t offset ) {
+static size_t _const16Op(const char* NAME, Chunk* chunk, size_t offset) {
 	const uint8_t CONST = chunk->code[++offset];
-	
+
 	printf("%-16s %4d '", NAME, CONST);
 	valuePrint(chunk->consts.values[CONST]);
 	printf("'\n");
@@ -107,11 +108,11 @@ static size_t _const16Op( const char *NAME, Chunk *chunk, size_t offset ) {
 	return offset + 1;
 }
 
-static size_t _const32Op( const char *NAME, Chunk *chunk, size_t offset ) {
+static size_t _const32Op(const char* NAME, Chunk* chunk, size_t offset) {
 	size_t constant = chunk->code[++offset];
-		  constant |= chunk->code[++offset] << 8;
-		  constant |= chunk->code[++offset] << 16;
-	
+	constant |= chunk->code[++offset] << 8;
+	constant |= chunk->code[++offset] << 16;
+
 	printf("%-16s %4d '", NAME, constant);
 	valuePrint(chunk->consts.values[constant]);
 	printf("'\n");

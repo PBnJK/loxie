@@ -16,9 +16,9 @@
  * @brief Struct representando um array de valores
  */
 typedef struct ValueArray {
-	size_t count;		/**< Ocupação atual do array de valores */
-	size_t size;		/**< Tamanho atual do array de valores */
-	Value *values;		/**< Array de valores */
+	size_t count;  /**< Ocupação atual do array de valores */
+	size_t size;   /**< Tamanho atual do array de valores */
+	Value *values; /**< Array de valores */
 } ValueArray;
 
 /**
@@ -26,14 +26,14 @@ typedef struct ValueArray {
  *
  * @param[out] array Ponteiro pro array que quer inicializar
  */
-void valueArrayInit( ValueArray *array );
+void valueArrayInit(ValueArray *array);
 
 /**
  * @brief Libera um ValueArray da memória
  *
  * @param[in] array Ponteiro pro array que quer liberar
  */
-void valueArrayFree( ValueArray *array );
+void valueArrayFree(ValueArray *array);
 
 /**
  * @brief Coloca um valor no array
@@ -41,7 +41,6 @@ void valueArrayFree( ValueArray *array );
  * @param[out] array Ponteiro pro ValueArray alvo
  * @param[in] value Novo valor que será colocado no array
  */
-void valueArrayWrite( ValueArray *array, Value value );
+void valueArrayWrite(ValueArray *array, Value value);
 
-#endif // GUARD_NEAT_VALUE_ARRAY_H
-
+#endif	// GUARD_NEAT_VALUE_ARRAY_H

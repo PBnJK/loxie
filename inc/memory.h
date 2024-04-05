@@ -16,8 +16,7 @@
  *
  * @param[in] OLD Tamanho velho do array
  */
-#define MEM_GROW_SIZE(OLD) \
-	((OLD) < 8 ? 8 : (OLD) * 2)
+#define MEM_GROW_SIZE(OLD) ((OLD) < 8 ? 8 : (OLD)*2)
 
 /**
  * @brief Cresce o array em si (use em conjunto com @ref MEM_GROW_SIZE)
@@ -37,8 +36,7 @@
  * @param[in] ARR Array que será liberado
  * @param[in] OLD Tamanho velho do array
  */
-#define MEM_FREE_ARRAY(TYPE, ARR, OLD) \
-	memRealloc(ARR, sizeof(TYPE) * OLD, 0)
+#define MEM_FREE_ARRAY(TYPE, ARR, OLD) memRealloc(ARR, sizeof(TYPE) * OLD, 0)
 
 /**
  * @brief Realoca uma quantidade de memória
@@ -51,7 +49,6 @@
  *
  * @return Novo bloco de memória
  */
-void *memRealloc( void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE );
+void *memRealloc(void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE);
 
-#endif // GUARD_NEAT_MEMORY_H
-
+#endif	// GUARD_NEAT_MEMORY_H

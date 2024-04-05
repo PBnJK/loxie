@@ -6,37 +6,31 @@
  * @brief Implementa a máquina virtual (VM) que interpretará o nosso código
  */
 
-#include <stdio.h>
-#include <math.h>
-
 #include "vm.h"
+
+#include <math.h>
+#include <stdio.h>
+
 #include "compiler.h"
 #include "debug.h"
+#include "error.h"
 #include "opcodes.h"
 #include "value.h"
-#include "error.h"
 
-VM vm = {0};
+VM vm = {0}; /**< Instância global da máquina virtual */
 
 /**
  * @brief Esvazia a pilha
  */
-static void _resetStack( void ) {
-	vm.stackTop = vm.stack;
-}
+static void _resetStack(void) { vm.stackTop = vm.stack; }
 
-void vmInit( void ) {
-	_resetStack();
-}
+void vmInit(void) { _resetStack(); }
 
-void vmFree( void ) {
-}
+void vmFree(void) {}
 
-void vmPush(Value value) {
-	*(vm.stackTop++) = value;
-}
+void vmPush(Value value) { *(vm.stackTop++) = value; }
 
-Value vmPop( void ) {
+Value vmPop(void) {
 	--vm.stackTop;
 	return *vm.stackTop;
 }
@@ -46,8 +40,8 @@ Value vmPop( void ) {
 /**
  * @brief Imprime o estado atual da pilha
  */
-static void _printStack( void ) {
-	for( Value *slot = vm.stack; slot < vm.stackTop; ++slot ) {
+static void _printStack(void) {
+	for (Value* slot = vm.stack; slot < vm.stackTop; ++slot) {
 		printf("[");
 		valuePrint(*slot);
 		printf("]");
@@ -56,16 +50,14 @@ static void _printStack( void ) {
 }
 #endif
 
-static Result _run( void ) {
-	while(true) {
+static Result _run(void) {
+	while (true) {
 #ifdef DEBUG_TRACE_EXECUTION
 		_printStack();
-		debugDisassembleInstruction(
-			vm.chunk, (size_t)(vm.pc - vm.chunk->code)
-		);
+		debugDisassembleInstruction(vm.chunk, (size_t)(vm.pc - vm.chunk->code));
 #endif
 		const uint8_t OP = READ_8();
-		switch(OP) {
+		switch (OP) {
 			case OP_CONST_16: {
 				Value constant = READ_CONST_16();
 				vmPush(constant);
@@ -110,25 +102,24 @@ static Result _run( void ) {
 				return RESULT_OK;
 
 			default:
-				errWarn(
-					chunkGetLine(vm.chunk, *(vm.pc - 1)),
-					"OPCODE desconhecido encontrado! -> ");
+				errWarn(chunkGetLine(vm.chunk, *(vm.pc - 1)),
+						"OPCODE desconhecido encontrado! -> ");
 				printf("%02x\n", OP);
 		}
 	}
 }
 
-Result vmInterpret(const char *SOURCE) {
+Result vmInterpret(const char* SOURCE) {
 	Chunk chunk;
 	chunkInit(&chunk);
-	
-	if( !compCompile(SOURCE, &chunk) ) {
+
+	if (!compCompile(SOURCE, &chunk)) {
 		chunkFree(&chunk);
 		return RESULT_COMPILER_ERROR;
 	}
 
 	vm.chunk = &chunk;
-	vm.pc    = vm.chunk->code;
+	vm.pc = vm.chunk->code;
 
 	const Result RESULT = _run();
 

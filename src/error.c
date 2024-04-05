@@ -6,14 +6,14 @@
  * @brief Helper para registro de erros
  */
 
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdio.h>
-
 #include "error.h"
 
-void errFatal( const size_t LINE, const char *MSG, ... ) {
-	if( LINE ) {
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void errFatal(const size_t LINE, const char* MSG, ...) {
+	if (LINE) {
 		fprintf(stderr, COLOR_RED "ERRO" COLOR_RESET " [linha %d]: ", LINE);
 	} else {
 		fputs(COLOR_RED "ERRO" COLOR_RESET ": ", stderr);
@@ -29,13 +29,13 @@ void errFatal( const size_t LINE, const char *MSG, ... ) {
 	printf("\n");
 }
 
-void errWarn( const size_t LINE, const char *MSG, ... ) {
-	if( LINE ) {
+void errWarn(const size_t LINE, const char* MSG, ...) {
+	if (LINE) {
 		fprintf(stderr, COLOR_YELLOW "AVISO" COLOR_RESET " [linha %d]: ", LINE);
 	} else {
 		fputs(COLOR_YELLOW "AVISO" COLOR_RESET ": ", stderr);
 	}
-	
+
 	va_list args;
 	va_start(args, MSG);
 
@@ -45,4 +45,3 @@ void errWarn( const size_t LINE, const char *MSG, ... ) {
 
 	printf("\n");
 }
-

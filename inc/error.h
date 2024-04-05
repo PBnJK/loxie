@@ -41,7 +41,7 @@
  * @param[in] LINE Linha onde o erro ocorreu
  * @param[in] MSG Mensagem de erro que será posta na tela
  */
-void errFatal( const size_t LINE, const char *MSG, ... );
+void errFatal(const size_t LINE, const char *MSG, ...);
 
 /**
  * @brief Imprime a mensagem requisitada como um erro, sem sair do programa
@@ -49,7 +49,6 @@ void errFatal( const size_t LINE, const char *MSG, ... );
  * @param[in] LINE Linha onde o erro ocorreu
  * @param[in] MSG Mensagem de erro que será posta na tela
  */
-void errWarn( const size_t LINE, const char *MSG, ... );
+void errWarn(const size_t LINE, const char *MSG, ...);
 
-#endif // GUARD_NEAT_ERROR_H
-
+#endif	// GUARD_NEAT_ERROR_H

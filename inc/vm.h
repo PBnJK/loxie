@@ -9,26 +9,25 @@
 #ifndef GUARD_NEAT_VM_H
 #define GUARD_NEAT_VM_H
 
-#include "common.h"
 #include "chunk.h"
+#include "common.h"
 #include "value.h"
 
 /**
  * @brief Lê um byte e avança o ponteiro
  */
-#define READ_8()  (*vm.pc++)
+#define READ_8() (*vm.pc++)
 
 /**
  * @brief Lê dois bytes e avança o ponteiro
  */
-#define READ_16() \
-	(vm.pc+=2,(uint16_t)((vm.pc[-2]<<8)|(vm.pc[-1])))
+#define READ_16() (vm.pc += 2, (uint16_t)((vm.pc[-2] << 8) | (vm.pc[-1])))
 
 /**
  * @brief Lê três bytes e avança o ponteiro
  */
 #define READ_24() \
-	(vm.pc+=3,(uint32_t)((vm.pc[-3]<<16)|(vm.pc[-2]<<8)|(vm.pc[-1])))
+	(vm.pc += 3, (uint32_t)((vm.pc[-3] << 16) | (vm.pc[-2] << 8) | (vm.pc[-1])))
 
 /**
  * @brief Lê uma constante
@@ -45,12 +44,12 @@
  *
  * @param OPERATOR Operação (uma de +, -, *, /) que será realizada
  */
-#define BINARY_OP(OPERATOR) \
-    do { \
-      double b = vmPop(); \
-      double a = vmPop(); \
-      vmPush(a OPERATOR b); \
-    } while (false)
+#define BINARY_OP(OPERATOR)   \
+	do {                      \
+		double b = vmPop();   \
+		double a = vmPop();   \
+		vmPush(a OPERATOR b); \
+	} while (false)
 
 /**
  * Tamanho máximo da pilha
@@ -61,33 +60,33 @@
  * @brief Enum representando o resultado de uma operação da VM
  */
 typedef enum {
-	RESULT_OK,					/**< Operação não teve erros */
-	RESULT_COMPILER_ERROR,		/**< Ocorreu um erro enquanto compilava */
-	RESULT_RUNTIME_ERROR,		/**< Ocorreu um erro enquanto rodava o código */
+	RESULT_OK,			   /**< Operação não teve erros */
+	RESULT_COMPILER_ERROR, /**< Ocorreu um erro enquanto compilava */
+	RESULT_RUNTIME_ERROR,  /**< Ocorreu um erro enquanto rodava o código */
 } Result;
 
 /**
  * @brief Struct representando uma máquina virtual
  */
 typedef struct VM {
-	Chunk *chunk;	/**< Chunk sendo interpretada pela máquina virtual */
-	uint8_t *pc;	/**< "Program Counter". Indica o byte sendo interpretado */
-	
-	Value *stackTop;			/**< O espaço vazio logo após o último item na pilha */
-	Value stack[STACK_MAX];		/**< A pilha de valores */
+	Chunk *chunk; /**< Chunk sendo interpretada pela máquina virtual */
+	uint8_t *pc;  /**< "Program Counter". Indica o byte sendo interpretado */
+
+	Value *stackTop; /**< O espaço vazio logo após o último item na pilha */
+	Value stack[STACK_MAX]; /**< A pilha de valores */
 } VM;
 
-extern VM vm;	/**< Instância global da VM, para acesso externo */
+extern VM vm; /**< Instância global da VM, para acesso externo */
 
 /**
  * @brief Inicializa a máquina virtual
  */
-void vmInit( void );
+void vmInit(void);
 
 /**
  * @brief Libera a máquina virtual da memória
  */
-void vmFree( void );
+void vmFree(void);
 
 /**
  * @brief Interpreta o código-fonte
@@ -110,6 +109,6 @@ void vmPush(Value value);
  *
  * @return O valor no topo da pilha
  */
-Value vmPop( void );
+Value vmPop(void);
 
-#endif // GUARD_NEAT_VM_H
+#endif	// GUARD_NEAT_VM_H
