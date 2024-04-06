@@ -19,14 +19,26 @@ typedef enum {
 	OP_CONST_16 = 0, /**< Pega uma constante, com um índice 8-bit */
 	OP_CONST_32 = 1, /**< Pega uma constante, com um índice 24-bit */
 
-	OP_NEGATE = 2, /**< Inverte o sinal de um número */
-	OP_ADD = 3,	   /**< Adiciona dois operandos */
-	OP_SUB = 4,	   /**< Subtrai dois operandos */
-	OP_MUL = 5,	   /**< Multiplica dois operandos */
-	OP_DIV = 6,	   /**< Divide dois operandos */
-	OP_MOD = 7,	   /**< Módulo de dois operandos (resto da divisão) */
+	OP_TRUE = 2,  /**< Valor verdadeiro */
+	OP_FALSE = 3, /**< Valor falso */
+	OP_NIL = 4,	  /**< Valor nulo */
 
-	OP_RETURN = 8, /**< Retorna de uma função */
+	OP_EQUAL = 5,		  /**< Igual a */
+	OP_GREATER = 6,		  /**< Maior que */
+	OP_GREATER_EQUAL = 7, /**< Maior ou igual a */
+	OP_LESS = 8,		  /**< Menor que */
+	OP_LESS_EQUAL = 9,	  /**< Menor ou igual a */
+
+	OP_ADD = 10, /**< Adiciona dois operandos */
+	OP_SUB = 11, /**< Subtrai dois operandos */
+	OP_MUL = 12, /**< Multiplica dois operandos */
+	OP_DIV = 13, /**< Divide dois operandos */
+	OP_MOD = 14, /**< Módulo de dois operandos (resto da divisão) */
+
+	OP_NEGATE = 15, /**< Inverte o sinal de um número */
+	OP_NOT = 16,	/**< Oposto de um booleano */
+
+	OP_RETURN = 17, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_NEAT_OPCODES_H

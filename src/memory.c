@@ -11,9 +11,23 @@
 #include <stdlib.h>
 
 #include "error.h"
+#include "vm.h"
 
-void* memRealloc(void* pointer, const size_t OLD_SIZE, const size_t NEW_SIZE) {
-	if (NEW_SIZE == 0) {
+static void _freeObject(Obj *object) {
+	switch( object->type ) {
+		case OBJ_STRING: {
+			ObjString *obj = (ObjString *)object;
+			obj = memRealloc(obj, sizeof(ObjString) + obj->length + 1, 0);
+		} break;
+		default:
+			errFatal(vmGetLine(),
+					 "Tentou liberar um objeto de tipo desconhecido %u",
+					 object->type);
+	}
+}
+
+void *memRealloc(void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE) {
+	if( NEW_SIZE == 0 ) {
 		/* Se o novo tamanho for 0, libere a memória, já que
 		 * realloc com tamanho 0 é UB.
 		 */
@@ -21,17 +35,26 @@ void* memRealloc(void* pointer, const size_t OLD_SIZE, const size_t NEW_SIZE) {
 		return NULL;
 	}
 
-	void* result = realloc(pointer, NEW_SIZE);
-	if (result == NULL) {
+	void *result = realloc(pointer, NEW_SIZE);
+	if( result == NULL ) {
 		/* Um erro aconteceu quando tentamos alocar mais memória
 		 * Ou a memória RAM acabou ( x _ x ) ...
 		 * ... ou um erro bisonho aconteceu.
 		 *
 		 * De qualquer forma, sai com código ERR_UNAVAILABLE
 		 */
-		errFatal(0, "Nao foi possivel alocar memoria!");
+		errFatal(vmGetLine(), "Nao foi possivel alocar memoria!");
 		exit(69);
 	}
 
 	return result;
+}
+
+void memFreeObjects(void) {
+	Obj *object = vm.objects;
+	while( object != NULL ) {
+		Obj *next = object->next;
+		_freeObject(object);
+		object = next;
+	}
 }

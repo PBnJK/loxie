@@ -38,9 +38,9 @@ typedef void (*ParseFn)(void); /**< Função de parsing */
  * compilda
  */
 typedef struct ParseRule {
-	ParseFn prefix;
-	ParseFn infix;
-	Precedence precedence;
+	ParseFn prefix;		   /**< Função chamada quando agindo como prefixo */
+	ParseFn infix;		   /**< Função chamada quando agindo como infixo */
+	Precedence precedence; /**< Precedência desta regra */
 } ParseRule;
 
 /**

@@ -49,7 +49,7 @@ static size_t _const32Op(const char* NAME, Chunk* chunk, size_t offset);
 void debugDisassembleChunk(Chunk* chunk, const char* NAME) {
 	printf("=== %s ===\n", NAME);
 
-	for (size_t offset = 0; offset < chunk->count;) {
+	for( size_t offset = 0; offset < chunk->count; ) {
 		offset = debugDisassembleInstruction(chunk, offset);
 	}
 }
@@ -58,7 +58,7 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 	printf("%04d ", offset);
 	const size_t LINE = chunkGetLine(chunk, offset);
 
-	if (offset > 0 && LINE == chunkGetLine(chunk, offset - 1)) {
+	if( offset > 0 && LINE == chunkGetLine(chunk, offset - 1) ) {
 		/* Linha é a mesma que a da mesma instrução.
 		 * Imprime uma linha pra deixar mais legível
 		 */
@@ -68,11 +68,27 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 	}
 
 	const uint8_t OP = chunk->code[offset];
-	switch (OP) {
+	switch( OP ) {
 		case OP_CONST_16:
 			return _const16Op("OP_CONST_16", chunk, offset);
 		case OP_CONST_32:
 			return _const32Op("OP_CONST_32", chunk, offset);
+		case OP_TRUE:
+			return _simpleOp("OP_TRUE", offset);
+		case OP_FALSE:
+			return _simpleOp("OP_FALSE", offset);
+		case OP_NIL:
+			return _simpleOp("OP_NIL", offset);
+		case OP_EQUAL:
+			return _simpleOp("OP_EQUAL", offset);
+		case OP_GREATER:
+			return _simpleOp("OP_GREATER", offset);
+		case OP_GREATER_EQUAL:
+			return _simpleOp("OP_GREATER_EQUAL", offset);
+		case OP_LESS:
+			return _simpleOp("OP_LESS", offset);
+		case OP_LESS_EQUAL:
+			return _simpleOp("OP_LESS_EQUAL", offset);
 		case OP_ADD:
 			return _simpleOp("OP_ADD", offset);
 		case OP_SUB:
@@ -85,6 +101,8 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _simpleOp("OP_MOD", offset);
 		case OP_NEGATE:
 			return _simpleOp("OP_NEGATE", offset);
+		case OP_NOT:
+			return _simpleOp("OP_NOT", offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:

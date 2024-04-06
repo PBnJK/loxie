@@ -31,14 +31,12 @@ static void _runFile(const char* PATH);
  * @return Código de erro do programa
  */
 int main(int argc, const char* argv[]) {
-	vmInit();
-
-	if (argc == 1) {
+	if( argc == 1 ) {
 		/* Nenhum argumento foi dado.
 		 * Iniciamos uma sessão interativa
 		 */
 		_runREPL();
-	} else if (argc == 2) {
+	} else if( argc == 2 ) {
 		/* Um argumento foi dado.
 		 * assumimos que é uma arquivo e tentamos interpretá-lo
 		 */
@@ -60,15 +58,15 @@ int main(int argc, const char* argv[]) {
 static void _runREPL(void) {
 	char buffer[REPL_BUFFER];
 
-	while (true) {
+	while( true ) {
 		printf("> ");
 
-		if (!fgets(buffer, REPL_BUFFER, stdin)) {
+		if( !fgets(buffer, REPL_BUFFER, stdin) ) {
 			printf("\n");
 			break;
 		}
 
-		if (*buffer == '\n') {
+		if( *buffer == '\n' ) {
 			break;
 		}
 
@@ -78,7 +76,7 @@ static void _runREPL(void) {
 
 static char* _readFile(const char* PATH) {
 	FILE* file = fopen(PATH, "rb");
-	if (file == NULL) {
+	if( file == NULL ) {
 		errFatal(0, "Nao foi possivel abrir o arquivo '%s'", PATH);
 		exit(74);
 	}
@@ -88,13 +86,13 @@ static char* _readFile(const char* PATH) {
 	rewind(file);
 
 	char* buffer = (char*)malloc(FILE_SIZE + 1);
-	if (buffer == NULL) {
+	if( buffer == NULL ) {
 		errFatal(0, "Sem memoria o bastante para ler o arquivo '%s'", PATH);
 		exit(74);
 	}
 
 	const size_t BYTES_READ = fread(buffer, sizeof(char), FILE_SIZE, file);
-	if (BYTES_READ < FILE_SIZE) {
+	if( BYTES_READ < FILE_SIZE ) {
 		errFatal(0, "Sem memoria o bastante para ler o arquivo '%s'", PATH);
 		exit(74);
 	}
@@ -110,11 +108,11 @@ static void _runFile(const char* PATH) {
 	Result result = vmInterpret(source);
 	free(source);
 
-	if (result == RESULT_COMPILER_ERROR) {
+	if( result == RESULT_COMPILER_ERROR ) {
 		exit(65);
 	}
 
-	if (result == RESULT_RUNTIME_ERROR) {
+	if( result == RESULT_RUNTIME_ERROR ) {
 		exit(64);
 	}
 }

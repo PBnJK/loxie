@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 void errFatal(const size_t LINE, const char* MSG, ...) {
-	if (LINE) {
+	if( LINE ) {
 		fprintf(stderr, COLOR_RED "ERRO" COLOR_RESET " [linha %d]: ", LINE);
 	} else {
 		fputs(COLOR_RED "ERRO" COLOR_RESET ": ", stderr);
@@ -30,7 +30,7 @@ void errFatal(const size_t LINE, const char* MSG, ...) {
 }
 
 void errWarn(const size_t LINE, const char* MSG, ...) {
-	if (LINE) {
+	if( LINE ) {
 		fprintf(stderr, COLOR_YELLOW "AVISO" COLOR_RESET " [linha %d]: ", LINE);
 	} else {
 		fputs(COLOR_YELLOW "AVISO" COLOR_RESET ": ", stderr);

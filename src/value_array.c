@@ -22,7 +22,7 @@ void valueArrayFree(ValueArray* array) {
 }
 
 void valueArrayWrite(ValueArray* array, Value value) {
-	if (array->size < array->count + 1) {
+	if( array->size < array->count + 1 ) {
 		const size_t OLD_SIZE = array->size;
 		array->size = MEM_GROW_SIZE(OLD_SIZE);
 

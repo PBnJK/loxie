@@ -12,10 +12,12 @@
 #include <stdlib.h>
 
 #include "error.h"
+#include "object.h"
 #include "opcodes.h"
 #include "parser.h"
 #include "scanner.h"
 #include "token.h"
+#include "vm.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -23,8 +25,10 @@
 
 Parser parser = {0}; /**< Instância global do Parser */
 
-Chunk* currentChunk;
-static Chunk* _chunk() { return currentChunk; }
+Chunk* currentChunk; /**< Chunk sendo usada atualmente */
+static Chunk* _chunk() {
+	return currentChunk;
+}
 
 static void _expression(void);
 static ParseRule* _getRule(const TokenType TYPE);
@@ -39,9 +43,9 @@ static void _errorAtPrev(const char* MSG);
 static void _advance(void) {
 	parser.previous = parser.current;
 
-	while (true) {
+	while( true ) {
 		parser.current = scanToken();
-		if (parser.current.type != TOKEN_ERROR) break;
+		if( parser.current.type != TOKEN_ERROR ) break;
 
 		_errorAtCurr(parser.current.START);
 	}
@@ -55,7 +59,7 @@ static void _advance(void) {
  * esperado
  */
 static void _consume(const TokenType TYPE, const char* MSG) {
-	if (parser.current.type == TYPE) {
+	if( parser.current.type == TYPE ) {
 		_advance();
 		return;
 	}
@@ -67,14 +71,14 @@ static void _precedence(const Precedence PRECEDENCE) {
 	_advance();
 
 	ParseFn prefix = _getRule(parser.previous.type)->prefix;
-	if (prefix == NULL) {
+	if( prefix == NULL ) {
 		_errorAtPrev("Esperava expressao");
 		return;
 	}
 
 	prefix();
 
-	while (PRECEDENCE <= _getRule(parser.current.type)->precedence) {
+	while( PRECEDENCE <= _getRule(parser.current.type)->precedence ) {
 		_advance();
 		ParseFn infix = _getRule(parser.previous.type)->infix;
 		infix();
@@ -104,7 +108,9 @@ static void _emitBytes(const uint8_t BYTE1, const uint8_t BYTE2) {
 /**
  * @brief Emite uma instrução de retorno
  */
-static void _emitReturn(void) { _emitByte(OP_RETURN); }
+static void _emitReturn(void) {
+	_emitByte(OP_RETURN);
+}
 
 /**
  * @brief Insere uma constante no array de constantes, sem escrever um opcode na
@@ -114,6 +120,7 @@ static void _emitReturn(void) { _emitByte(OP_RETURN); }
  * @return Índice do valor no array de constantes
  */
 static size_t _makeConstant(Value value) {
+	++vm.stackMax;
 	return chunkAddConst(_chunk(), value);
 }
 
@@ -124,13 +131,16 @@ static size_t _makeConstant(Value value) {
  * @param[in] value Valor constante que será criado
  */
 static void _emitConstant(Value value) {
+	++vm.stackMax;
 	chunkWriteConst(_chunk(), value, parser.previous.line);
 }
 
 /**
  * @brief Compila uma expressão
  */
-static void _expression(void) { _precedence(PREC_ASSIGNMENT); }
+static void _expression(void) {
+	_precedence(PREC_ASSIGNMENT);
+}
 
 /**
  * @brief Compila uma expressão de agrupamento
@@ -141,11 +151,38 @@ static void _grouping(void) {
 }
 
 /**
- * @brief Compila um número, inserindo seu valor na chunk
+ * @brief Compila um número
  */
 static void _number(void) {
-	Value value = strtod(parser.previous.START, NULL);
-	_emitConstant(value);
+	const NEAT_NUMBER NUMBER = (NEAT_NUMBER)strtod(parser.previous.START, NULL);
+	_emitConstant(CREATE_NUMBER(NUMBER));
+}
+
+/**
+ * @brief Compila uma string
+ */
+static void _string(void) {
+	_emitConstant(CREATE_OBJECT(
+		objCopyString(parser.previous.START + 1, parser.previous.length - 2)));
+}
+
+/**
+ * @brief Compila um literal (bool ou nil)
+ */
+static void _literal(void) {
+	switch( parser.previous.type ) {
+		case TOKEN_TRUE:
+			_emitByte(OP_TRUE);
+			break;
+		case TOKEN_FALSE:
+			_emitByte(OP_FALSE);
+			break;
+		case TOKEN_NIL:
+			_emitByte(OP_NIL);
+			break;
+		default:
+			return;
+	}
 }
 
 /**
@@ -158,9 +195,12 @@ static void _unary(void) {
 	_precedence(PREC_UNARY);
 
 	/* ...e processamos o operador! */
-	switch (OP_TYPE) {
+	switch( OP_TYPE ) {
 		case TOKEN_MINUS:
 			_emitByte(OP_NEGATE);
+			return;
+		case TOKEN_BANG:
+			_emitByte(OP_NOT);
 			return;
 		default:
 			return;
@@ -175,7 +215,7 @@ static void _binary(void) {
 	ParseRule* rule = _getRule(OP_TYPE);
 	_precedence((Precedence)(rule->precedence + 1));
 
-	switch (OP_TYPE) {
+	switch( OP_TYPE ) {
 		case TOKEN_PLUS:
 			_emitByte(OP_ADD);
 			break;
@@ -191,12 +231,30 @@ static void _binary(void) {
 		case TOKEN_PERCENT:
 			_emitByte(OP_MOD);
 			break;
+		case TOKEN_BANG_EQUAL:
+			_emitBytes(OP_EQUAL, OP_NOT);
+			break;
+		case TOKEN_EQUAL_EQUAL:
+			_emitByte(OP_EQUAL);
+			break;
+		case TOKEN_GREATER:
+			_emitByte(OP_GREATER);
+			break;
+		case TOKEN_GREATER_EQUAL:
+			_emitByte(OP_GREATER_EQUAL);
+			break;
+		case TOKEN_LESS:
+			_emitByte(OP_LESS);
+			break;
+		case TOKEN_LESS_EQUAL:
+			_emitByte(OP_LESS_EQUAL);
+			break;
 		default:
 			return;
 	}
 }
 
-static void _conditional( void ) {
+static void _conditional(void) {
 	_precedence(PREC_CONDITIONAL);
 	_consume(TOKEN_COLON, "Esperava ':'");
 	_precedence(PREC_ASSIGNMENT);
@@ -222,27 +280,27 @@ ParseRule rules[] = {
 	[TOKEN_SLASH] = {NULL, _binary, PREC_FACTOR},
 	[TOKEN_STAR] = {NULL, _binary, PREC_FACTOR},
 	[TOKEN_PERCENT] = {NULL, _binary, PREC_FACTOR},
-	[TOKEN_BANG] = {NULL, NULL, PREC_NONE},
+	[TOKEN_BANG] = {_unary, NULL, PREC_NONE},
 
-	[TOKEN_BANG_EQUAL] = {NULL, NULL, PREC_NONE},
-	[TOKEN_EQUAL] = {NULL, NULL, PREC_NONE},
-	[TOKEN_EQUAL_EQUAL] = {NULL, NULL, PREC_NONE},
-	[TOKEN_LESS] = {NULL, NULL, PREC_NONE},
-	[TOKEN_LESS_EQUAL] = {NULL, NULL, PREC_NONE},
-	[TOKEN_GREATER] = {NULL, NULL, PREC_NONE},
-	[TOKEN_GREATER_EQUAL] = {NULL, NULL, PREC_NONE},
+	[TOKEN_BANG_EQUAL] = {NULL, _binary, PREC_EQUALITY},
+	[TOKEN_EQUAL] = {NULL, _binary, PREC_EQUALITY},
+	[TOKEN_EQUAL_EQUAL] = {NULL, _binary, PREC_COMPARISON},
+	[TOKEN_LESS] = {NULL, _binary, PREC_COMPARISON},
+	[TOKEN_LESS_EQUAL] = {NULL, _binary, PREC_COMPARISON},
+	[TOKEN_GREATER] = {NULL, _binary, PREC_COMPARISON},
+	[TOKEN_GREATER_EQUAL] = {NULL, _binary, PREC_COMPARISON},
 
 	[TOKEN_IDENTIFIER] = {NULL, NULL, PREC_NONE},
-	[TOKEN_STRING] = {NULL, NULL, PREC_NONE},
+	[TOKEN_STRING] = {_string, NULL, PREC_NONE},
 	[TOKEN_INTERPOLATION] = {NULL, NULL, PREC_NONE},
 	[TOKEN_NUMBER] = {_number, NULL, PREC_NONE},
 
 	[TOKEN_AND] = {NULL, NULL, PREC_NONE},
 	[TOKEN_OR] = {NULL, NULL, PREC_NONE},
 
-	[TOKEN_TRUE] = {NULL, NULL, PREC_NONE},
-	[TOKEN_FALSE] = {NULL, NULL, PREC_NONE},
-	[TOKEN_NIL] = {NULL, NULL, PREC_NONE},
+	[TOKEN_TRUE] = {_literal, NULL, PREC_NONE},
+	[TOKEN_FALSE] = {_literal, NULL, PREC_NONE},
+	[TOKEN_NIL] = {_literal, NULL, PREC_NONE},
 
 	[TOKEN_FOR] = {NULL, NULL, PREC_NONE},
 	[TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
@@ -257,7 +315,7 @@ ParseRule rules[] = {
 	[TOKEN_IF] = {NULL, NULL, PREC_NONE},
 	[TOKEN_ELSE] = {NULL, NULL, PREC_NONE},
 	[TOKEN_QUESTION] = {NULL, _conditional, PREC_CONDITIONAL},
-//	[TOKEN_COLON] = {NULL, NULL, PREC_NONE},
+	//	[TOKEN_COLON] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LET] = {NULL, NULL, PREC_NONE},
@@ -266,7 +324,9 @@ ParseRule rules[] = {
 	[TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
-static ParseRule* _getRule(const TokenType TYPE) { return &rules[TYPE]; }
+static ParseRule* _getRule(const TokenType TYPE) {
+	return &rules[TYPE];
+}
 
 /**
  * @brief Encerra o compilador
@@ -275,7 +335,7 @@ static void _end(void) {
 	_emitReturn();
 
 #ifdef DEBUG_PRINT_CODE
-	if (!parser.hadError) {
+	if( !parser.hadError ) {
 		debugDisassembleChunk(_chunk(), "<script>");
 	}
 #endif
@@ -296,23 +356,27 @@ bool compCompile(const char* SOURCE, Chunk* chunk) {
 }
 
 static void _errorAt(Token* token, const char* MSG) {
-	if (parser.panicked) {
+	if( parser.panicked ) {
 		return;
 	}
 
 	parser.hadError = parser.panicked = true;
 
-	if (token->type == TOKEN_EOF) {
+	if( token->type == TOKEN_EOF ) {
 		errFatal(token->line, "%s\n\t~ no final da linha", MSG);
 		return;
-	} else if (token->type == TOKEN_ERROR) {
+	} else if( token->type == TOKEN_ERROR ) {
 		return;
 	}
 
-	errFatal(token->line, "%s\n\t~ no trecho '%.*s'", token->length,
+	errFatal(token->line, "%s\n\t~ no trecho '%.*s'", MSG, token->length,
 			 token->START);
 }
 
-static void _errorAtCurr(const char* MSG) { _errorAt(&parser.current, MSG); }
+static void _errorAtCurr(const char* MSG) {
+	_errorAt(&parser.current, MSG);
+}
 
-static void _errorAtPrev(const char* MSG) { _errorAt(&parser.previous, MSG); }
+static void _errorAtPrev(const char* MSG) {
+	_errorAt(&parser.previous, MSG);
+}

@@ -14,49 +14,6 @@
 #include "value.h"
 
 /**
- * @brief Lê um byte e avança o ponteiro
- */
-#define READ_8() (*vm.pc++)
-
-/**
- * @brief Lê dois bytes e avança o ponteiro
- */
-#define READ_16() (vm.pc += 2, (uint16_t)((vm.pc[-2] << 8) | (vm.pc[-1])))
-
-/**
- * @brief Lê três bytes e avança o ponteiro
- */
-#define READ_24() \
-	(vm.pc += 3, (uint32_t)((vm.pc[-3] << 16) | (vm.pc[-2] << 8) | (vm.pc[-1])))
-
-/**
- * @brief Lê uma constante
- */
-#define READ_CONST_16() (vm.chunk->consts.values[READ_8()])
-
-/**
- * @brief Lê uma constante longa
- */
-#define READ_CONST_32() (vm.chunk->consts.values[READ_24()])
-
-/**
- * @brief Realiza um operação binária com os dois itens no topo da pilha
- *
- * @param OPERATOR Operação (uma de +, -, *, /) que será realizada
- */
-#define BINARY_OP(OPERATOR)   \
-	do {                      \
-		double b = vmPop();   \
-		double a = vmPop();   \
-		vmPush(a OPERATOR b); \
-	} while (false)
-
-/**
- * Tamanho máximo da pilha
- */
-#define STACK_MAX 256
-
-/**
  * @brief Enum representando o resultado de uma operação da VM
  */
 typedef enum {
@@ -73,7 +30,10 @@ typedef struct VM {
 	uint8_t *pc;  /**< "Program Counter". Indica o byte sendo interpretado */
 
 	Value *stackTop; /**< O espaço vazio logo após o último item na pilha */
-	Value stack[STACK_MAX]; /**< A pilha de valores */
+	Value *stack;	 /**< A pilha de valores */
+	uint16_t stackMax; /**< Valor máximo em que a pilha chegará */
+
+	Obj *objects; /**< Lista de objetos */
 } VM;
 
 extern VM vm; /**< Instância global da VM, para acesso externo */
@@ -87,6 +47,12 @@ void vmInit(void);
  * @brief Libera a máquina virtual da memória
  */
 void vmFree(void);
+
+/**
+ * @brief Retorna a linha em que a VM está atualmente
+ * @return A linha atual
+ */
+size_t vmGetLine(void);
 
 /**
  * @brief Interpreta o código-fonte
