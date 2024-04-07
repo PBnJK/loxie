@@ -28,13 +28,13 @@
 /**
  * @brief Lê dois bytes e avança o ponteiro
  */
-#define READ_16() (vm.pc += 2, (uint16_t)((vm.pc[-2] << 8) | (vm.pc[-1])))
+#define READ_16() (vm.pc += 2, (uint16_t)(vm.pc[-2] | (vm.pc[-1] << 8)))
 
 /**
  * @brief Lê três bytes e avança o ponteiro
  */
 #define READ_24() \
-	(vm.pc += 3, (uint32_t)((vm.pc[-3] << 16) | (vm.pc[-2] << 8) | (vm.pc[-1])))
+	(vm.pc += 3, (uint32_t)(vm.pc[-3] | (vm.pc[-2] << 8) | (vm.pc[-1] << 16)))
 
 /**
  * @brief Lê uma constante
@@ -45,6 +45,19 @@
  * @brief Lê uma constante longa
  */
 #define READ_CONST_32() (vm.chunk->consts.values[READ_24()])
+
+/**
+ * @brief Lê uma global
+ */
+#define READ_GLOBAL_16() (vm.globalValues.values[READ_8()])
+
+/**
+ * @brief Lê uma global longa
+ */
+#define READ_GLOBAL_32() (vm.globalValues.values[READ_24()])
+
+#define READ_STRING_16() (AS_STRING(READ_CONST_16()))
+#define READ_STRING_32() (AS_STRING(READ_CONST_32()))
 
 /**
  * @brief Realiza um operação binária com os dois itens no topo da pilha
@@ -73,12 +86,12 @@
 	} while( false )
 
 VM vm = {0}; /**< Instância global da máquina virtual */
+
 /**
  * @brief Esvazia a pilha
  */
+
 static void _resetStack(void) {
-	vm.stack = MEM_GROW_ARRAY(Value, vm.stack, (size_t)(vm.stackTop - vm.stack),
-							  vm.stackMax);
 	vm.stackTop = vm.stack;
 }
 
@@ -103,19 +116,38 @@ static void _concatenate(void) {
 	const size_t LENGTH = strA->length + strB->length;
 
 	ObjString *result = objMakeString(LENGTH);
+
 	memcpy(result->str, strA->str, strA->length);
 	memcpy(result->str + strA->length, strB->str, strB->length);
+
 	result->str[LENGTH] = '\0';
+	result->hash = hashString(result->str, LENGTH);
+
+	tableSet(&vm.strings, CREATE_OBJECT(result), CREATE_NIL());
 
 	vmPush(CREATE_OBJECT(result));
 }
 
-void vmInit(void) {
+void vmInitStack(void) {
+	vm.stack = MEM_GROW_ARRAY(Value, vm.stack, (size_t)(vm.stackTop - vm.stack),
+							  vm.stackMax);
 	_resetStack();
+}
+
+void vmInit(void) {
 	vm.objects = NULL;
+
+	tableInit(&vm.globalNames);
+	valueArrayInit(&vm.globalValues);
+
+	tableInit(&vm.strings);
 }
 
 void vmFree(void) {
+	tableFree(&vm.globalNames);
+	valueArrayFree(&vm.globalValues);
+
+	tableFree(&vm.strings);
 	memFreeObjects();
 }
 
@@ -130,6 +162,7 @@ Value vmPop(void) {
 }
 
 size_t vmGetLine(void) {
+	printf("got A\n");
 	return chunkGetLine(vm.chunk, vm.pc - vm.chunk->code - 1);
 }
 
@@ -138,6 +171,7 @@ size_t vmGetLine(void) {
  * @brief Imprime o estado atual da pilha
  */
 static void _printStack(void) {
+	printf("(%u/%u)", vm.stackTop - vm.stack, vm.stackMax);
 	for( Value *slot = vm.stack; slot < vm.stackTop; ++slot ) {
 		printf("[");
 		valuePrint(*slot);
@@ -176,6 +210,67 @@ static Result _run(void) {
 			case OP_NIL:
 				vmPush(CREATE_NIL());
 				break;
+
+			case OP_POP:
+				vmPop();
+				break;
+
+			case OP_DEF_GLOBAL_16:
+				READ_GLOBAL_16() = vmPop();
+				break;
+
+			case OP_DEF_GLOBAL_32:
+				READ_GLOBAL_32() = vmPop();
+				break;
+
+			case OP_GET_GLOBAL_16: {
+				Value value = READ_GLOBAL_16();
+				if( IS_EMPTY(value) ) {
+					RUNTIME_ERROR("Variavel indefinida '%s'.",
+								  AS_STRING(value)->str);
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				vmPush(value);
+				break;
+			}
+
+			case OP_GET_GLOBAL_32: {
+				Value value = READ_GLOBAL_32();
+				if( IS_EMPTY(value) ) {
+					RUNTIME_ERROR("Variavel indefinida '%s'.",
+								  AS_STRING(value)->str);
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				vmPush(value);
+				break;
+			}
+
+			case OP_SET_GLOBAL_16: {
+				uint8_t index = READ_8();
+				Value value = vm.globalValues.values[index];
+				if( IS_EMPTY(value) ) {
+					RUNTIME_ERROR("Variavel indefinida '%s'.",
+								  AS_STRING(value)->str);
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				vm.globalValues.values[index] = _peek(0);
+			} break;
+
+			case OP_SET_GLOBAL_32: {
+				uint32_t index = READ_24();
+				Value value = vm.globalValues.values[index];
+				if( IS_EMPTY(value) ) {
+					RUNTIME_ERROR("Variavel indefinida '%s'.",
+								  AS_STRING(value)->str);
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				vm.globalValues.values[index] = _peek(0);
+
+			} break;
 
 			case OP_EQUAL: {
 				Value a = vmPop();
@@ -251,9 +346,12 @@ static Result _run(void) {
 				vmPush(CREATE_BOOL(_isFalsey(vmPop())));
 				break;
 
-			case OP_RETURN:
+			case OP_PRINT:
 				valuePrint(vmPop());
 				printf("\n");
+				return RESULT_OK;
+
+			case OP_RETURN:
 				return RESULT_OK;
 
 			default:
@@ -275,8 +373,6 @@ Result vmInterpret(const char *SOURCE) {
 		return RESULT_COMPILER_ERROR;
 	}
 
-	vmInit();
-	
 	vm.chunk = &chunk;
 	vm.pc = vm.chunk->code;
 
@@ -292,5 +388,8 @@ Result vmInterpret(const char *SOURCE) {
 
 #undef READ_CONST_16
 #undef READ_CONST_32
+
+#undef READ_STRING_16
+#undef READ_STRING_32
 
 #undef BINARY_OP

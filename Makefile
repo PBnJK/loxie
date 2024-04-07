@@ -14,7 +14,7 @@
 CC := gcc
 LD := gcc
 
-CFLAGS := -Wall -Wextra -pedantic
+CFLAGS := -Wall -Wextra -pedantic -static-libgcc
 
 # Caminhos
 BASE := C:/neat-lang

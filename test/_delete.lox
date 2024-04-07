@@ -1,9 +1,0 @@
-if( a == 2 or a == 3 ) {
-	print "That's a predicament";
-} else if ( a >= 9 and c > 3 ) {
-	fn closure(x) {
-		print "inside" + x;	
-	}
-
-	closure(a)
-}

@@ -31,6 +31,8 @@ static void _runFile(const char* PATH);
  * @return Código de erro do programa
  */
 int main(int argc, const char* argv[]) {
+	vmInit();
+
 	if( argc == 1 ) {
 		/* Nenhum argumento foi dado.
 		 * Iniciamos uma sessão interativa

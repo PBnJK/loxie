@@ -27,13 +27,8 @@ bool valueEquals(const Value A, const Value B) {
 			return AS_BOOL(A) == AS_BOOL(B);
 		case VALUE_NUMBER:
 			return AS_NUMBER(A) == AS_NUMBER(B);
-		case VALUE_OBJECT: {
-			ObjString *strA = AS_STRING(A);
-			ObjString *strB = AS_STRING(B);
-
-			return strA->length == strB->length &&
-				   memcmp(strA->str, strB->str, strA->length) == 0;
-		}
+		case VALUE_OBJECT:
+			return AS_OBJECT(A) == AS_OBJECT(B);
 		default:
 			errFatal(vmGetLine(), "Tentou comparar %u com %u", A.type, B.type);
 	}
@@ -54,6 +49,9 @@ void valuePrint(Value value) {
 			break;
 		case VALUE_OBJECT:
 			objPrint(value);
+			break;
+		case VALUE_EMPTY:
+			printf("empty");
 			break;
 		default:
 			errFatal(vmGetLine(), "Valor desconhecido %u", value.type);

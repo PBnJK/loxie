@@ -23,6 +23,8 @@
 #include "debug.h"
 #endif
 
+uint16_t stackMax = 0;
+
 Parser parser = {0}; /**< Instância global do Parser */
 
 Chunk* currentChunk; /**< Chunk sendo usada atualmente */
@@ -31,11 +33,21 @@ static Chunk* _chunk() {
 }
 
 static void _expression(void);
+static void _declaration(void);
+static void _statement(void);
+
 static ParseRule* _getRule(const TokenType TYPE);
 static void _precedence(const Precedence PRECEDENCE);
 
 static void _errorAtCurr(const char* MSG);
 static void _errorAtPrev(const char* MSG);
+
+static void _increaseStackMax(void) {
+	++stackMax;
+	if( stackMax >= vm.stackMax ) {
+		vm.stackMax = stackMax;
+	}
+}
 
 /**
  * @brief Avança um token para frente
@@ -49,6 +61,25 @@ static void _advance(void) {
 
 		_errorAtCurr(parser.current.START);
 	}
+}
+
+/**
+ * @todo Documentar
+ */
+static bool _check(const TokenType TYPE) {
+	return parser.current.type == TYPE;
+}
+
+/**
+ * @todo Documentar
+ */
+static bool _match(const TokenType TYPE) {
+	if( !_check(TYPE) ) {
+		return false;
+	}
+
+	_advance();
+	return true;
 }
 
 /**
@@ -76,12 +107,13 @@ static void _precedence(const Precedence PRECEDENCE) {
 		return;
 	}
 
-	prefix();
+	const bool CAN_ASSIGN = (PRECEDENCE <= PREC_ASSIGNMENT);
+	prefix(CAN_ASSIGN);
 
 	while( PRECEDENCE <= _getRule(parser.current.type)->precedence ) {
 		_advance();
 		ParseFn infix = _getRule(parser.previous.type)->infix;
-		infix();
+		infix(CAN_ASSIGN);
 	}
 }
 
@@ -106,6 +138,14 @@ static void _emitBytes(const uint8_t BYTE1, const uint8_t BYTE2) {
 }
 
 /**
+ * @brief Emite uma instrução pop
+ */
+static void _emitPop(void) {
+	--stackMax;
+	_emitByte(OP_POP);
+}
+
+/**
  * @brief Emite uma instrução de retorno
  */
 static void _emitReturn(void) {
@@ -120,7 +160,7 @@ static void _emitReturn(void) {
  * @return Índice do valor no array de constantes
  */
 static size_t _makeConstant(Value value) {
-	++vm.stackMax;
+	_increaseStackMax();
 	return chunkAddConst(_chunk(), value);
 }
 
@@ -131,8 +171,22 @@ static size_t _makeConstant(Value value) {
  * @param[in] value Valor constante que será criado
  */
 static void _emitConstant(Value value) {
-	++vm.stackMax;
+	_increaseStackMax();
 	chunkWriteConst(_chunk(), value, parser.previous.line);
+}
+
+static void _emitConstantWithOp(const OpCode TYPE_SHORT, const OpCode TYPE_LONG,
+								const size_t INDEX) {
+	if( INDEX > UINT8_MAX ) {
+		_emitByte(TYPE_LONG);
+		_emitByte((uint8_t)(INDEX & 0xFF));
+		_emitByte((uint8_t)((INDEX >> 8) & 0xFF));
+		_emitByte((uint8_t)((INDEX >> 16) & 0xFF));
+		return;
+	}
+
+	_emitByte(TYPE_SHORT);
+	_emitByte((uint8_t)INDEX);
 }
 
 /**
@@ -142,10 +196,111 @@ static void _expression(void) {
 	_precedence(PREC_ASSIGNMENT);
 }
 
+static void _expressionStatement(void) {
+	_expression();
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor");
+	_emitPop();
+}
+
+static void _printStatement(void) {
+	_expression();
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor");
+	_emitByte(OP_PRINT);
+}
+
+static void _synchronize(void) {
+	parser.panicked = false;
+
+	while( parser.current.type != TOKEN_EOF ) {
+		if( parser.previous.type == TOKEN_SEMICOLON ) {
+			return;
+		}
+
+		switch( parser.current.type ) {
+			case TOKEN_CLASS:
+			case TOKEN_FN:
+			case TOKEN_LET:
+			case TOKEN_FOR:
+			case TOKEN_IF:
+			case TOKEN_WHILE:
+			case TOKEN_PRINT:
+			case TOKEN_RETURN:
+				return;
+			default:;
+		}
+
+		_advance();
+	}
+}
+
+static size_t _identifierConstant(Token* name) {
+	Value string = CREATE_OBJECT(objCopyString(name->START, name->length));
+	Value index;
+	if( tableGet(&vm.globalNames, string, &index) ) {
+		return AS_NUMBER(index);
+	}
+
+	const size_t INDEX = vm.globalValues.count;
+
+	valueArrayWrite(&vm.globalValues, CREATE_EMPTY());
+	tableSet(&vm.globalNames, string, CREATE_NUMBER((double)INDEX));
+
+	return INDEX;
+}
+
+static size_t _parseVariable(const char* MSG) {
+	_consume(TOKEN_IDENTIFIER, MSG);
+	return _identifierConstant(&parser.previous);
+}
+
+static void _defineVariable(const uint32_t GLOBAL) {
+	_emitConstantWithOp(OP_DEF_GLOBAL_16, OP_DEF_GLOBAL_32, GLOBAL);
+}
+
+static void _varDeclaration(void) {
+	const size_t GLOBAL = _parseVariable("Esperava o nome da variável.");
+
+	if( _match(TOKEN_EQUAL) ) {
+		_expression();
+	} else {
+		_emitByte(OP_NIL);
+	}
+
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois de declaração de variável.");
+
+	_defineVariable(GLOBAL);
+}
+
+/**
+ * @brief Compila uma declaração
+ */
+static void _statement(void) {
+	if( _match(TOKEN_PRINT) ) {
+		_printStatement();
+	} else {
+		_expressionStatement();
+	}
+}
+
+/**
+ * @brief Compila uma declaração de nome
+ */
+static void _declaration(void) {
+	if( _match(TOKEN_LET) ) {
+		_varDeclaration();
+	} else {
+		_statement();
+	}
+
+	if( parser.panicked ) {
+		_synchronize();
+	}
+}
+
 /**
  * @brief Compila uma expressão de agrupamento
  */
-static void _grouping(void) {
+static void _grouping(const bool CAN_ASSIGN) {
 	_expression(); /* Chamada recursiva da função _expression()... */
 	_consume(TOKEN_RPAREN, "Esperava um ')' depois da expressao");
 }
@@ -153,7 +308,7 @@ static void _grouping(void) {
 /**
  * @brief Compila um número
  */
-static void _number(void) {
+static void _number(const bool CAN_ASSIGN) {
 	const NEAT_NUMBER NUMBER = (NEAT_NUMBER)strtod(parser.previous.START, NULL);
 	_emitConstant(CREATE_NUMBER(NUMBER));
 }
@@ -161,15 +316,30 @@ static void _number(void) {
 /**
  * @brief Compila uma string
  */
-static void _string(void) {
+static void _string(const bool CAN_ASSIGN) {
 	_emitConstant(CREATE_OBJECT(
 		objCopyString(parser.previous.START + 1, parser.previous.length - 2)));
+}
+
+static void _namedVariable(Token name, const bool CAN_ASSIGN) {
+	const size_t ARG = _identifierConstant(&name);
+
+	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
+		_expression();
+		_emitConstantWithOp(OP_SET_GLOBAL_16, OP_SET_GLOBAL_32, ARG);
+	} else {
+		_emitConstantWithOp(OP_GET_GLOBAL_16, OP_GET_GLOBAL_32, ARG);
+	}
+}
+
+static void _variable(const bool CAN_ASSIGN) {
+	_namedVariable(parser.previous, CAN_ASSIGN);
 }
 
 /**
  * @brief Compila um literal (bool ou nil)
  */
-static void _literal(void) {
+static void _literal(const bool CAN_ASSIGN) {
 	switch( parser.previous.type ) {
 		case TOKEN_TRUE:
 			_emitByte(OP_TRUE);
@@ -188,7 +358,7 @@ static void _literal(void) {
 /**
  * @brief Compila uma expressão unária ( -2, !variável, etc )
  */
-static void _unary(void) {
+static void _unary(const bool CAN_ASSIGN) {
 	const TokenType OP_TYPE = parser.previous.type;
 
 	/* Consumimos o operando... */
@@ -210,10 +380,12 @@ static void _unary(void) {
 /**
  * @brief Compila uma expressão binária ( 2 + 3, a / 5, etc )
  */
-static void _binary(void) {
+static void _binary(const bool CAN_ASSIGN) {
 	const TokenType OP_TYPE = parser.previous.type;
 	ParseRule* rule = _getRule(OP_TYPE);
 	_precedence((Precedence)(rule->precedence + 1));
+
+	--stackMax;
 
 	switch( OP_TYPE ) {
 		case TOKEN_PLUS:
@@ -254,7 +426,7 @@ static void _binary(void) {
 	}
 }
 
-static void _conditional(void) {
+static void _conditional(const bool CAN_ASSIGN) {
 	_precedence(PREC_CONDITIONAL);
 	_consume(TOKEN_COLON, "Esperava ':'");
 	_precedence(PREC_ASSIGNMENT);
@@ -290,7 +462,7 @@ ParseRule rules[] = {
 	[TOKEN_GREATER] = {NULL, _binary, PREC_COMPARISON},
 	[TOKEN_GREATER_EQUAL] = {NULL, _binary, PREC_COMPARISON},
 
-	[TOKEN_IDENTIFIER] = {NULL, NULL, PREC_NONE},
+	[TOKEN_IDENTIFIER] = {_variable, NULL, PREC_NONE},
 	[TOKEN_STRING] = {_string, NULL, PREC_NONE},
 	[TOKEN_INTERPOLATION] = {NULL, NULL, PREC_NONE},
 	[TOKEN_NUMBER] = {_number, NULL, PREC_NONE},
@@ -333,6 +505,7 @@ static ParseRule* _getRule(const TokenType TYPE) {
  */
 static void _end(void) {
 	_emitReturn();
+	vmInitStack();
 
 #ifdef DEBUG_PRINT_CODE
 	if( !parser.hadError ) {
@@ -347,9 +520,12 @@ bool compCompile(const char* SOURCE, Chunk* chunk) {
 	currentChunk = chunk;
 	parser.hadError = parser.panicked = false;
 
+	stackMax = 0;
+
 	_advance();
-	_expression();
-	_consume(TOKEN_EOF, "Esperava fim da expressao");
+	while( !_match(TOKEN_EOF) ) {
+		_declaration();
+	}
 
 	_end();
 	return !parser.hadError;

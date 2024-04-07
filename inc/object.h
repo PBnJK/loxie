@@ -35,6 +35,7 @@ struct Obj {
  */
 struct ObjString {
 	Obj obj;	   /**< Objeto base */
+	uint32_t hash; /**< Hash da string (valor numérico que a representa */
 	size_t length; /**< Tamanho da string */
 	char str[];	   /**< Caracteres que compõe a string */
 };
@@ -71,6 +72,18 @@ static inline bool _isObjectOfType(const Value VALUE, const ObjType TYPE) {
  * @return A string criada
  */
 ObjString *objMakeString(const size_t LEN);
+
+/**
+ * @brief Obtém a hash de uma string
+ *
+ * Usa o algoritmo FNV-1a
+ *
+ * @param[in] KEY String a partir da qual a hash será gerada
+ * @param[in] LENGTH Tamanho da string
+ *
+ * @return Hash da string @a KEY
+ */
+uint32_t hashString(const char *KEY, const size_t LENGTH);
 
 /**
  * @brief Cria um ObjString a partir de uma cópia da string @a STR

@@ -23,22 +23,32 @@ typedef enum {
 	OP_FALSE = 3, /**< Valor falso */
 	OP_NIL = 4,	  /**< Valor nulo */
 
-	OP_EQUAL = 5,		  /**< Igual a */
-	OP_GREATER = 6,		  /**< Maior que */
-	OP_GREATER_EQUAL = 7, /**< Maior ou igual a */
-	OP_LESS = 8,		  /**< Menor que */
-	OP_LESS_EQUAL = 9,	  /**< Menor ou igual a */
+	OP_POP = 5,			  /**< Retira um valor da pilha */
+	OP_DEF_GLOBAL_16 = 6, /**< Define uma variável global, con índice 8-bit */
+	OP_DEF_GLOBAL_32 = 7, /**< Define uma variável global, com índice 24-bit */
+	OP_GET_GLOBAL_16 = 8,  /**< Pega uma variável global, con índice 8-bit */
+	OP_GET_GLOBAL_32 = 9,  /**< Pega uma variável global, com índice 24-bit */
+	OP_SET_GLOBAL_16 = 10, /**< Pega uma variável global, con índice 8-bit */
+	OP_SET_GLOBAL_32 = 11, /**< Pega uma variável global, com índice 24-bit */
 
-	OP_ADD = 10, /**< Adiciona dois operandos */
-	OP_SUB = 11, /**< Subtrai dois operandos */
-	OP_MUL = 12, /**< Multiplica dois operandos */
-	OP_DIV = 13, /**< Divide dois operandos */
-	OP_MOD = 14, /**< Módulo de dois operandos (resto da divisão) */
+	OP_EQUAL = 12,		   /**< Igual a */
+	OP_GREATER = 13,	   /**< Maior que */
+	OP_GREATER_EQUAL = 14, /**< Maior ou igual a */
+	OP_LESS = 15,		   /**< Menor que */
+	OP_LESS_EQUAL = 16,	   /**< Menor ou igual a */
 
-	OP_NEGATE = 15, /**< Inverte o sinal de um número */
-	OP_NOT = 16,	/**< Oposto de um booleano */
+	OP_ADD = 17, /**< Adiciona dois operandos */
+	OP_SUB = 18, /**< Subtrai dois operandos */
+	OP_MUL = 19, /**< Multiplica dois operandos */
+	OP_DIV = 20, /**< Divide dois operandos */
+	OP_MOD = 21, /**< Módulo de dois operandos (resto da divisão) */
 
-	OP_RETURN = 17, /**< Retorna de uma função */
+	OP_NEGATE = 22, /**< Inverte o sinal de um número */
+	OP_NOT = 23,	/**< Oposto de um booleano */
+
+	OP_PRINT = 24, /**< Imprimir */
+
+	OP_RETURN = 25, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_NEAT_OPCODES_H

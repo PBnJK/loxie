@@ -31,7 +31,7 @@ typedef enum {
 	PREC_PRIMARY = 11	  /**< Precedência máxima */
 } Precedence;
 
-typedef void (*ParseFn)(void); /**< Função de parsing */
+typedef void (*ParseFn)(const bool); /**< Função de parsing */
 
 /**
  * @brief Struct representando uma regra através da qual uma expressão e

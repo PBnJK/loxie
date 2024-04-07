@@ -13,6 +13,7 @@
 
 #include "error.h"
 #include "memory.h"
+#include "table.h"
 #include "value.h"
 #include "vm.h"
 
@@ -35,14 +36,35 @@ ObjString *objMakeString(const size_t LEN) {
 		(ObjString *)_allocObject(sizeof(ObjString) + LEN + 1, OBJ_STRING);
 
 	string->length = LEN;
+
 	return string;
 }
 
+uint32_t hashString(const char *KEY, const size_t LENGTH) {
+	uint32_t hash = 2166136261u;
+	for( size_t i = 0; i < LENGTH; ++i ) {
+		hash ^= (uint8_t)KEY[i];
+		hash *= 16777619;
+	}
+
+	return hash;
+}
+
 ObjString *objCopyString(const char *STR, const size_t LEN) {
+	uint32_t hash = hashString(STR, LEN);
+
+	Value interned = tableFindString(&vm.strings, STR, LEN, hash);
+	if( !IS_EMPTY(interned) ) {
+		return AS_STRING(interned);
+	}
+
 	ObjString *string = objMakeString(LEN);
 
 	memcpy(string->str, STR, LEN);
 	string->str[LEN] = '\0';
+
+	string->hash = hashString(string->str, LEN);
+	tableSet(&vm.strings, CREATE_OBJECT(string), CREATE_NIL());
 
 	return string;
 }

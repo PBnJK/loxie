@@ -11,7 +11,9 @@
 
 #include "chunk.h"
 #include "common.h"
+#include "table.h"
 #include "value.h"
+#include "value_array.h"
 
 /**
  * @brief Enum representando o resultado de uma operação da VM
@@ -33,10 +35,16 @@ typedef struct VM {
 	Value *stack;	 /**< A pilha de valores */
 	uint16_t stackMax; /**< Valor máximo em que a pilha chegará */
 
-	Obj *objects; /**< Lista de objetos */
+	Table globalNames;		 /**< Hashmap com os nomes das variáveis globais */
+	ValueArray globalValues; /**< Array com os valores das variáveis globais */
+
+	Table strings; /**< Hashmap de strings */
+	Obj *objects;  /**< Lista de objetos */
 } VM;
 
 extern VM vm; /**< Instância global da VM, para acesso externo */
+
+void vmInitStack(void);
 
 /**
  * @brief Inicializa a máquina virtual

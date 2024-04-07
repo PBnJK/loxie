@@ -25,6 +25,8 @@ typedef enum {
 	VALUE_BOOL = 1,	  /**< Valor booleano */
 	VALUE_NUMBER = 2, /**< Valor numérico */
 	VALUE_OBJECT = 3, /**< Objeto */
+	VALUE_EMPTY = 4, /**< Valor vazio, usado para representar uma entry vazia em
+						um hasmap */
 } ValueType;
 
 /**
@@ -52,6 +54,9 @@ typedef struct Value {
 
 /** Verifica se um valor é um objeto */
 #define IS_OBJECT(VALUE) ((VALUE).type == VALUE_OBJECT)
+
+/** Verifica se um valor é vazio */
+#define IS_EMPTY(VALUE) ((VALUE).type == VALUE_EMPTY)
 
 /** Trata um valor como um bool */
 #define AS_BOOL(VALUE) ((VALUE).vBool)
@@ -83,6 +88,9 @@ typedef struct Value {
  */
 #define CREATE_OBJECT(VALUE) \
 	((Value){.type = VALUE_OBJECT, .vObject = (Obj *)VALUE})
+
+/** Cria um valor vazio */
+#define CREATE_EMPTY() ((Value){.type = VALUE_EMPTY, .vNumber = 0})
 
 /**
  * @brief Compara dois valores e retorna se são iguais

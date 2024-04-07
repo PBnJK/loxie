@@ -12,6 +12,7 @@
 
 #include "error.h"
 #include "opcodes.h"
+#include "vm.h"
 
 /**
  * @brief Imprime uma operação sem operandos
@@ -36,7 +37,7 @@ static size_t _simpleOp(const char* NAME, size_t offset);
 static size_t _const16Op(const char* NAME, Chunk* chunk, size_t offset);
 
 /**
- * @brief Mesmo que @ref _Const16Op, mas com um índice 24-bit
+ * @brief Mesmo que @ref _const16Op, mas com um índice 24-bit
  *
  * @param[in] NAME Nome da operação
  * @param[in] chunk Ponteiro pra chunk onde reside a constante
@@ -45,6 +46,29 @@ static size_t _const16Op(const char* NAME, Chunk* chunk, size_t offset);
  * @return O próximo índice, pulando a instrução + índice
  */
 static size_t _const32Op(const char* NAME, Chunk* chunk, size_t offset);
+
+/**
+ * @brief Imprime uma operação com um operando que é um índice no array
+ * de constantes da VM
+ *
+ * @param[in] NAME Nome da operação
+ * @param[in] chunk Ponteiro pra chunk
+ * @param[in] offset Índice no array de bytes
+ *
+ * @return O próximo índice, pulando a instrução + índice
+ */
+static size_t _global16Op(const char* NAME, Chunk* chunk, size_t offset);
+
+/**
+ * @brief Mesmo que @ref _global16Op, mas com um índice 24-bit
+ *
+ * @param[in] NAME Nome da operação
+ * @param[in] chunk Ponteiro pra chunk
+ * @param[in] offset Índice no array de bytes
+ *
+ * @return O próximo índice, pulando a instrução + índice
+ */
+static size_t _global32Op(const char* NAME, Chunk* chunk, size_t offset);
 
 void debugDisassembleChunk(Chunk* chunk, const char* NAME) {
 	printf("=== %s ===\n", NAME);
@@ -79,6 +103,20 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _simpleOp("OP_FALSE", offset);
 		case OP_NIL:
 			return _simpleOp("OP_NIL", offset);
+		case OP_POP:
+			return _simpleOp("OP_POP", offset);
+		case OP_DEF_GLOBAL_16:
+			return _global16Op("OP_DEF_GLOBAL_16", chunk, offset);
+		case OP_DEF_GLOBAL_32:
+			return _global32Op("OP_DEF_GLOBAL_32", chunk, offset);
+		case OP_GET_GLOBAL_16:
+			return _global16Op("OP_GET_GLOBAL_16", chunk, offset);
+		case OP_GET_GLOBAL_32:
+			return _global32Op("OP_GET_GLOBAL_32", chunk, offset);
+		case OP_SET_GLOBAL_16:
+			return _global16Op("OP_SET_GLOBAL_16", chunk, offset);
+		case OP_SET_GLOBAL_32:
+			return _global32Op("OP_SET_GLOBAL_32", chunk, offset);
 		case OP_EQUAL:
 			return _simpleOp("OP_EQUAL", offset);
 		case OP_GREATER:
@@ -103,6 +141,8 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _simpleOp("OP_NEGATE", offset);
 		case OP_NOT:
 			return _simpleOp("OP_NOT", offset);
+		case OP_PRINT:
+			return _simpleOp("OP_PRINT", offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:
@@ -133,6 +173,28 @@ static size_t _const32Op(const char* NAME, Chunk* chunk, size_t offset) {
 
 	printf("%-16s %4d '", NAME, constant);
 	valuePrint(chunk->consts.values[constant]);
+	printf("'\n");
+
+	return offset + 1;
+}
+
+static size_t _global16Op(const char* NAME, Chunk* chunk, size_t offset) {
+	const uint8_t CONST = chunk->code[++offset];
+
+	printf("%-16s %4d '", NAME, CONST);
+	valuePrint(vm.globalValues.values[CONST]);
+	printf("'\n");
+
+	return offset + 1;
+}
+
+static size_t _global32Op(const char* NAME, Chunk* chunk, size_t offset) {
+	size_t constant = chunk->code[++offset];
+	constant |= chunk->code[++offset] << 8;
+	constant |= chunk->code[++offset] << 16;
+
+	printf("%-16s %4d '", NAME, constant);
+	valuePrint(vm.globalValues.values[constant]);
 	printf("'\n");
 
 	return offset + 1;
