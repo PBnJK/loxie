@@ -16,11 +16,11 @@
 #include "vm.h"
 
 bool valueEquals(const Value A, const Value B) {
-	if( A.type != B.type ) {
+	if( GET_TYPE(A) != GET_TYPE(B) ) {
 		return false;
 	}
 
-	switch( A.type ) {
+	switch( GET_TYPE(A) ) {
 		case VALUE_NIL:
 			return true;
 		case VALUE_BOOL:
@@ -30,14 +30,15 @@ bool valueEquals(const Value A, const Value B) {
 		case VALUE_OBJECT:
 			return AS_OBJECT(A) == AS_OBJECT(B);
 		default:
-			errFatal(vmGetLine(), "Tentou comparar %u com %u", A.type, B.type);
+			errFatal(vmGetLine(), "Tentou comparar %u com %u", GET_TYPE(A),
+					 GET_TYPE(B));
 	}
 
 	return false;
 }
 
 void valuePrint(Value value) {
-	switch( value.type ) {
+	switch( GET_TYPE(value) ) {
 		case VALUE_NIL:
 			printf("nil");
 			break;
@@ -54,6 +55,6 @@ void valuePrint(Value value) {
 			printf("empty");
 			break;
 		default:
-			errFatal(vmGetLine(), "Valor desconhecido %u", value.type);
+			errFatal(vmGetLine(), "Valor desconhecido %u", GET_TYPE(value));
 	}
 }

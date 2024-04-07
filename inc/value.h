@@ -26,15 +26,19 @@ typedef enum {
 	VALUE_NUMBER = 2, /**< Valor numérico */
 	VALUE_OBJECT = 3, /**< Objeto */
 	VALUE_EMPTY = 4, /**< Valor vazio, usado para representar uma entry vazia em
-						um hasmap */
+					   um hasmap */
 } ValueType;
 
 /**
  * @brief Struct representando um valor
  */
 typedef struct Value {
-	ValueType type; /**< O tipo atual sendo representado por este valor */
-
+	uint8_t props; /**< Propriedades do valor:
+					* 7 6 5 4 3 2 1 0
+					*         | |   |
+					*         | ValueType do valor
+					*         Se este valor é constante
+					*/
 	union {
 		bool vBool;			 /**< Valor booleano */
 		NEAT_NUMBER vNumber; /**< Valor numérico */
@@ -42,21 +46,26 @@ typedef struct Value {
 	};
 } Value;
 
+/** Retorna o tipo do valor */
+#define GET_TYPE(VALUE) ((VALUE).props & 7)
+
+/** Retorna se o valor é constante */
+#define IS_CONSTANT(VALUE) (((VALUE).props >> 3) & 1)
+
 /** Verifica se um valor é nulo */
-#define IS_NIL(VALUE) ((VALUE).type == VALUE_NIL)
+#define IS_NIL(VALUE) (GET_TYPE(VALUE) == VALUE_NIL)
 
-/** Verifica se um valor é numérico */
 /** Verifica se um valor é booleano */
-#define IS_BOOL(VALUE) ((VALUE).type == VALUE_BOOL)
+#define IS_BOOL(VALUE) (GET_TYPE(VALUE) == VALUE_BOOL)
 
 /** Verifica se um valor é numérico */
-#define IS_NUMBER(VALUE) ((VALUE).type == VALUE_NUMBER)
+#define IS_NUMBER(VALUE) (GET_TYPE(VALUE) == VALUE_NUMBER)
 
 /** Verifica se um valor é um objeto */
-#define IS_OBJECT(VALUE) ((VALUE).type == VALUE_OBJECT)
+#define IS_OBJECT(VALUE) (GET_TYPE(VALUE) == VALUE_OBJECT)
 
 /** Verifica se um valor é vazio */
-#define IS_EMPTY(VALUE) ((VALUE).type == VALUE_EMPTY)
+#define IS_EMPTY(VALUE) (GET_TYPE(VALUE) == VALUE_EMPTY)
 
 /** Trata um valor como um bool */
 #define AS_BOOL(VALUE) ((VALUE).vBool)
@@ -68,29 +77,29 @@ typedef struct Value {
 #define AS_OBJECT(VALUE) ((VALUE).vObject)
 
 /** Cria um valor nulo */
-#define CREATE_NIL() ((Value){.type = VALUE_NIL, .vNumber = 0})
+#define CREATE_NIL() ((Value){.props = VALUE_NIL, .vNumber = 0})
 
 /**
  * @brief Cria um valor booleano
  * @param[in] VALUE Valor booleano inicial
  */
-#define CREATE_BOOL(VALUE) ((Value){.type = VALUE_BOOL, .vBool = VALUE})
+#define CREATE_BOOL(VALUE) ((Value){.props = VALUE_BOOL, .vBool = VALUE})
 
 /**
  * @brief Cria um valor numérico
  * @param[in] VALUE Valor numérico inicial
  */
-#define CREATE_NUMBER(VALUE) ((Value){.type = VALUE_NUMBER, .vNumber = VALUE})
+#define CREATE_NUMBER(VALUE) ((Value){.props = VALUE_NUMBER, .vNumber = VALUE})
 
 /**
  * @brief Cria um objeto
  * @param[in] VALUE Objeto inicial
  */
 #define CREATE_OBJECT(VALUE) \
-	((Value){.type = VALUE_OBJECT, .vObject = (Obj *)VALUE})
+	((Value){.props = VALUE_OBJECT, .vObject = (Obj *)VALUE})
 
 /** Cria um valor vazio */
-#define CREATE_EMPTY() ((Value){.type = VALUE_EMPTY, .vNumber = 0})
+#define CREATE_EMPTY() ((Value){.props = VALUE_EMPTY, .vNumber = 0})
 
 /**
  * @brief Compara dois valores e retorna se são iguais

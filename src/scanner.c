@@ -329,7 +329,16 @@ static TokenType _getIdentifierType(void) {
 		case 'a':
 			return _checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c':
-			return _checkKeyword(1, 4, "lass", TOKEN_CLASS);
+			if( scanner.CURRENT - scanner.START > 1 ) {
+				switch( scanner.START[1] ) {
+					case 'l':
+						return _checkKeyword(2, 3, "ass", TOKEN_CLASS);
+					case 'o':
+						return _checkKeyword(2, 3, "nst", TOKEN_CONST);
+				}
+			}
+
+			break;
 		case 'e':
 			return _checkKeyword(1, 3, "lse", TOKEN_ELSE);
 		case 'f':

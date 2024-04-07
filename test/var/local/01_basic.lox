@@ -1,0 +1,8 @@
+{
+	let a = "Oi, ";
+	let b = a + "amigo!";
+	print b;
+}
+
+let b = "Outra coisa";
+print b;

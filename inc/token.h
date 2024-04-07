@@ -73,13 +73,14 @@ typedef enum {
 
 	TOKEN_PRINT = 44, /**< 'print', imprime uma variável pra tela */
 	TOKEN_LET = 45,	  /**< 'let', declara uma nova variável */
+	TOKEN_CONST = 46, /**< 'let', declara uma nova constante */
 
-	TOKEN_ERROR = 46, /**< 'error', emitido quando um erro é detectado */
-	TOKEN_EOF = 47,	  /**< 'eof', fim do arquivo */
+	TOKEN_ERROR = 47, /**< 'error', emitido quando um erro é detectado */
+	TOKEN_EOF = 48,	  /**< 'eof', fim do arquivo */
 } TokenType;
 
 /**
- * @brief Um token da linguagem
+ * @brief Struct representando um token da linguagem
  */
 typedef struct Token {
 	TokenType type;	   /**< Tipo do token */

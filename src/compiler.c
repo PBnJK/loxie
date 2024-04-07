@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "error.h"
 #include "object.h"
@@ -23,9 +24,28 @@
 #include "debug.h"
 #endif
 
-uint16_t stackMax = 0;
+/**
+ * @brief Struct representando uma variável local
+ */
+typedef struct Local {
+	Token name;
+	int16_t depth;
+} Local;
 
-Parser parser = {0}; /**< Instância global do Parser */
+/**
+ * @brief Struct representando o compilador
+ */
+typedef struct Compiler {
+	Local locals[UINT8_COUNT];
+	int16_t localCount;
+	int16_t scope;
+} Compiler;
+
+uint16_t stackMax = 0; /**< Quantidade máxima de valores que serão inseridos n
+						 pilha */
+
+Parser parser = {0};	  /**< Instância global do Parser */
+Compiler* current = NULL; /**< Ponteiro pro compilador atual */
 
 Chunk* currentChunk; /**< Chunk sendo usada atualmente */
 static Chunk* _chunk() {
@@ -103,6 +123,7 @@ static void _precedence(const Precedence PRECEDENCE) {
 
 	ParseFn prefix = _getRule(parser.previous.type)->prefix;
 	if( prefix == NULL ) {
+		printf("%u\n", parser.previous.type);
 		_errorAtPrev("Esperava expressao");
 		return;
 	}
@@ -189,11 +210,59 @@ static void _emitConstantWithOp(const OpCode TYPE_SHORT, const OpCode TYPE_LONG,
 	_emitByte((uint8_t)INDEX);
 }
 
+static void _patchJump(const int32_t OFFSET) {
+	const int32_t JUMP = _chunk()->count - OFFSET - 2;
+
+	if( JUMP > UINT16_MAX ) {
+		_errorAtPrev("Too much code to jump over.");
+	}
+
+	_chunk()->code[OFFSET] = (JUMP >> 8) & 0xff;
+	_chunk()->code[OFFSET + 1] = JUMP & 0xff;
+}
+
+static int32_t _emitJump(const OpCode INSTRUCTION) {
+	_emitByte(INSTRUCTION);
+	_emitByte(0x7f);
+	_emitByte(0x7f);
+
+	return _chunk()->count - 2;
+}
+
+static void _initCompiler(Compiler* compiler) {
+	compiler->localCount = 0;
+	compiler->scope = 0;
+
+	current = compiler;
+}
+
+static void _beginScope(void) {
+	++current->scope;
+}
+
+static void _endScope(void) {
+	--current->scope;
+
+	while( current->localCount > 0 &&
+		   current->locals[current->localCount - 1].depth > current->scope ) {
+		_emitPop();
+		--current->localCount;
+	}
+}
+
 /**
  * @brief Compila uma expressão
  */
 static void _expression(void) {
 	_precedence(PREC_ASSIGNMENT);
+}
+
+static void _block(void) {
+	while( !_check(TOKEN_RBRACE) && !_check(TOKEN_EOF) ) {
+		_declaration();
+	}
+
+	_consume(TOKEN_RBRACE, "Esperava '{' depois de um bloco");
 }
 
 static void _expressionStatement(void) {
@@ -208,6 +277,27 @@ static void _printStatement(void) {
 	_emitByte(OP_PRINT);
 }
 
+static void _ifStatement(void) {
+	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'if'.");
+	_expression();
+	_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao.");
+
+	const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+	_emitPop();
+	_statement();
+
+	const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
+
+	_patchJump(THEN_JUMP);
+	_emitPop();
+
+	if( _match(TOKEN_ELSE) ) {
+		_statement();
+	}
+
+	_patchJump(ELSE_JUMP);
+}
+
 static void _synchronize(void) {
 	parser.panicked = false;
 
@@ -220,6 +310,7 @@ static void _synchronize(void) {
 			case TOKEN_CLASS:
 			case TOKEN_FN:
 			case TOKEN_LET:
+			case TOKEN_CONST:
 			case TOKEN_FOR:
 			case TOKEN_IF:
 			case TOKEN_WHILE:
@@ -248,13 +339,113 @@ static size_t _identifierConstant(Token* name) {
 	return INDEX;
 }
 
+static bool _identifiersEqual(Token* a, Token* b) {
+	if( a->length != b->length ) {
+		return false;
+	}
+
+	return memcmp(a->START, b->START, a->length) == 0;
+}
+
+static int16_t _resolveLocal(Compiler* compiler, Token* name) {
+	for( int16_t i = compiler->localCount - 1; i >= 0; --i ) {
+		Local* local = &compiler->locals[i];
+		if( _identifiersEqual(name, &local->name) ) {
+			if( local->depth == -1 ) {
+				_errorAtPrev("Impossivel iniciar variavel consigo mesma");
+			}
+
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static void _markInitialized() {
+	current->locals[current->localCount - 1].depth = current->scope;
+}
+
+static void _addLocal(Token name) {
+	if( current->localCount == UINT8_COUNT ) {
+		_errorAtPrev("Variáveis locais de mais na função.");
+		return;
+	}
+
+	Local* local = &current->locals[current->localCount++];
+	local->name = name;
+	local->depth = -1;
+}
+
+static void _declareVariable(void) {
+	if( current->scope == 0 ) {
+		return;
+	}
+
+	Token* name = &parser.previous;
+	for( int16_t i = current->localCount - 1; i >= 0; --i ) {
+		Local* local = &current->locals[i];
+		if( local->depth != -1 && local->depth < current->scope ) {
+			break;
+		}
+
+		if( _identifiersEqual(name, &local->name) ) {
+			_errorAtPrev("Variavel com este nome ja existe nesse escopo");
+		}
+	}
+
+	_addLocal(*name);
+}
+
 static size_t _parseVariable(const char* MSG) {
 	_consume(TOKEN_IDENTIFIER, MSG);
+
+	_declareVariable();
+	if( current->scope > 0 ) {
+		return 0;
+	}
+
 	return _identifierConstant(&parser.previous);
 }
 
 static void _defineVariable(const uint32_t GLOBAL) {
+	if( current->scope > 0 ) {
+		_markInitialized();
+		return;
+	}
+
+	--stackMax;
 	_emitConstantWithOp(OP_DEF_GLOBAL_16, OP_DEF_GLOBAL_32, GLOBAL);
+}
+
+static void _defineConst(const uint32_t GLOBAL) {
+	if( current->scope > 0 ) {
+		_markInitialized();
+		return;
+	}
+
+	--stackMax;
+	_emitConstantWithOp(OP_DEF_CONST_16, OP_DEF_CONST_32, GLOBAL);
+}
+
+static void _and(const bool CAN_ASSIGN) {
+	const int32_t END_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+
+	_emitPop();
+	_precedence(PREC_AND);
+
+	_patchJump(END_JUMP);
+}
+
+static void _or(const bool CAN_ASSIGN) {
+	const int32_t ELSE_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+	const int32_t END_JUMP = _emitJump(OP_JUMP);
+
+	_patchJump(ELSE_JUMP);
+	_emitPop();
+
+	_precedence(PREC_OR);
+	_patchJump(END_JUMP);
 }
 
 static void _varDeclaration(void) {
@@ -271,12 +462,32 @@ static void _varDeclaration(void) {
 	_defineVariable(GLOBAL);
 }
 
+static void _constDeclaration(void) {
+	const size_t GLOBAL = _parseVariable("Esperava o nome da variável.");
+
+	if( _match(TOKEN_EQUAL) ) {
+		_expression();
+	} else {
+		_errorAtPrev("Constantes precisam ser definidas imediatamente");
+	}
+
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois de declaração de variável.");
+
+	_defineConst(GLOBAL);
+}
+
 /**
  * @brief Compila uma declaração
  */
 static void _statement(void) {
 	if( _match(TOKEN_PRINT) ) {
 		_printStatement();
+	} else if( _match(TOKEN_IF) ) {
+		_ifStatement();
+	} else if( _match(TOKEN_LBRACE) ) {
+		_beginScope();
+		_block();
+		_endScope();
 	} else {
 		_expressionStatement();
 	}
@@ -288,6 +499,8 @@ static void _statement(void) {
 static void _declaration(void) {
 	if( _match(TOKEN_LET) ) {
 		_varDeclaration();
+	} else if( _match(TOKEN_CONST) ) {
+		_constDeclaration();
 	} else {
 		_statement();
 	}
@@ -322,13 +535,24 @@ static void _string(const bool CAN_ASSIGN) {
 }
 
 static void _namedVariable(Token name, const bool CAN_ASSIGN) {
-	const size_t ARG = _identifierConstant(&name);
+	uint8_t getOp, setOp;
+	int16_t arg = _resolveLocal(current, &name);
+
+	if( arg != -1 ) {
+		getOp = OP_GET_LOCAL_16;
+		setOp = OP_SET_LOCAL_16;
+	} else {
+		arg = _identifierConstant(&name);
+		getOp = OP_GET_GLOBAL_16;
+		setOp = OP_SET_GLOBAL_16;
+	}
 
 	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
+		_increaseStackMax();
 		_expression();
-		_emitConstantWithOp(OP_SET_GLOBAL_16, OP_SET_GLOBAL_32, ARG);
+		_emitConstantWithOp(setOp, setOp + 1, arg);
 	} else {
-		_emitConstantWithOp(OP_GET_GLOBAL_16, OP_GET_GLOBAL_32, ARG);
+		_emitConstantWithOp(getOp, getOp + 1, arg);
 	}
 }
 
@@ -427,9 +651,36 @@ static void _binary(const bool CAN_ASSIGN) {
 }
 
 static void _conditional(const bool CAN_ASSIGN) {
-	_precedence(PREC_CONDITIONAL);
+	/*	_expression();
+		_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao.");
+
+		const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+		_emitPop();
+		_statement();
+
+		const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
+
+		_patchJump(THEN_JUMP);
+		_emitPop();
+
+		if( _match(TOKEN_ELSE) ) {
+			_statement();
+		}
+
+		_patchJump(ELSE_JUMP); */
+
+	const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+	_emitPop();
+	_expression();
+
 	_consume(TOKEN_COLON, "Esperava ':'");
-	_precedence(PREC_ASSIGNMENT);
+	const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
+	_patchJump(THEN_JUMP);
+
+	_emitPop();
+	_expression();
+
+	_patchJump(ELSE_JUMP);
 }
 
 /**
@@ -467,8 +718,8 @@ ParseRule rules[] = {
 	[TOKEN_INTERPOLATION] = {NULL, NULL, PREC_NONE},
 	[TOKEN_NUMBER] = {_number, NULL, PREC_NONE},
 
-	[TOKEN_AND] = {NULL, NULL, PREC_NONE},
-	[TOKEN_OR] = {NULL, NULL, PREC_NONE},
+	[TOKEN_AND] = {NULL, _and, PREC_AND},
+	[TOKEN_OR] = {NULL, _or, PREC_OR},
 
 	[TOKEN_TRUE] = {_literal, NULL, PREC_NONE},
 	[TOKEN_FALSE] = {_literal, NULL, PREC_NONE},
@@ -491,6 +742,7 @@ ParseRule rules[] = {
 
 	[TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LET] = {NULL, NULL, PREC_NONE},
+	[TOKEN_CONST] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_ERROR] = {NULL, NULL, PREC_NONE},
 	[TOKEN_EOF] = {NULL, NULL, PREC_NONE},
@@ -516,6 +768,9 @@ static void _end(void) {
 
 bool compCompile(const char* SOURCE, Chunk* chunk) {
 	scannerInit(SOURCE);
+
+	Compiler compiler;
+	_initCompiler(&compiler);
 
 	currentChunk = chunk;
 	parser.hadError = parser.panicked = false;

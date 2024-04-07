@@ -24,11 +24,13 @@
  * Compile o neatc com -DNEAT_USE_32BIT_NUMBER caso queira usar floats
  * 32-bits tradicionais
  */
-
 #ifdef NEAT_USE_32BIT_NUMBERS
 #define NEAT_NUMBER float
 #else
 #define NEAT_NUMBER double
 #endif
+
+/** Quantidade de valores que podem ser representados por um número 8-bit */
+#define UINT8_COUNT (UINT8_MAX + 1)
 
 #endif	// GUARD_NEAT_COMMON_H

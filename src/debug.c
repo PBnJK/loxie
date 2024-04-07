@@ -70,6 +70,31 @@ static size_t _global16Op(const char* NAME, Chunk* chunk, size_t offset);
  */
 static size_t _global32Op(const char* NAME, Chunk* chunk, size_t offset);
 
+/**
+ * @brief Imprime uma operação com operando 8-bit
+ *
+ * @param[in] NAME Nome da operação
+ * @param[in] chunk Ponteiro pra chunk
+ * @param[in] offset Índice no array de bytes
+ *
+ * @return O próximo índice
+ */
+static size_t _local16Op(const char* NAME, Chunk* chunk, size_t offset);
+
+/**
+ * @brief Imprime uma operação com operando 24-bit
+ *
+ * @param[in] NAME Nome da operação
+ * @param[in] chunk Ponteiro pra chunk
+ * @param[in] offset Índice no array de bytes
+ *
+ * @return O próximo índice
+ */
+static size_t _local32Op(const char* NAME, Chunk* chunk, size_t offset);
+
+static size_t _jumpOp(const char* NAME, const int8_t SIGN, Chunk* chunk,
+					  size_t offset);
+
 void debugDisassembleChunk(Chunk* chunk, const char* NAME) {
 	printf("=== %s ===\n", NAME);
 
@@ -109,14 +134,26 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _global16Op("OP_DEF_GLOBAL_16", chunk, offset);
 		case OP_DEF_GLOBAL_32:
 			return _global32Op("OP_DEF_GLOBAL_32", chunk, offset);
+		case OP_DEF_CONST_16:
+			return _global16Op("OP_DEF_CONST_16", chunk, offset);
+		case OP_DEF_CONST_32:
+			return _global32Op("OP_DEF_CONST_32", chunk, offset);
 		case OP_GET_GLOBAL_16:
 			return _global16Op("OP_GET_GLOBAL_16", chunk, offset);
 		case OP_GET_GLOBAL_32:
 			return _global32Op("OP_GET_GLOBAL_32", chunk, offset);
+		case OP_GET_LOCAL_16:
+			return _local16Op("OP_GET_LOCAL_16", chunk, offset);
+		case OP_GET_LOCAL_32:
+			return _local32Op("OP_GET_LOCAL_32", chunk, offset);
 		case OP_SET_GLOBAL_16:
 			return _global16Op("OP_SET_GLOBAL_16", chunk, offset);
 		case OP_SET_GLOBAL_32:
 			return _global32Op("OP_SET_GLOBAL_32", chunk, offset);
+		case OP_SET_LOCAL_16:
+			return _local16Op("OP_SET_LOCAL_16", chunk, offset);
+		case OP_SET_LOCAL_32:
+			return _local32Op("OP_SET_LOCAL_32", chunk, offset);
 		case OP_EQUAL:
 			return _simpleOp("OP_EQUAL", offset);
 		case OP_GREATER:
@@ -143,6 +180,10 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _simpleOp("OP_NOT", offset);
 		case OP_PRINT:
 			return _simpleOp("OP_PRINT", offset);
+		case OP_JUMP:
+			return _jumpOp("OP_JUMP", 1, chunk, offset);
+		case OP_JUMP_IF_FALSE:
+			return _jumpOp("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:
@@ -197,5 +238,28 @@ static size_t _global32Op(const char* NAME, Chunk* chunk, size_t offset) {
 	valuePrint(vm.globalValues.values[constant]);
 	printf("'\n");
 
+	return offset + 1;
+}
+
+static size_t _local16Op(const char* NAME, Chunk* chunk, size_t offset) {
+	uint8_t slot = chunk->code[++offset];
+	printf("%-16s %4d\n", NAME, slot);
+	return offset + 1;
+}
+
+static size_t _local32Op(const char* NAME, Chunk* chunk, size_t offset) {
+	uint8_t slot = chunk->code[++offset];
+	slot |= chunk->code[++offset] << 8;
+	slot |= chunk->code[++offset] << 16;
+
+	printf("%-16s %4d\n", NAME, slot);
+	return offset + 1;
+}
+
+static size_t _jumpOp(const char* NAME, const int8_t SIGN, Chunk* chunk,
+					  size_t offset) {
+	uint16_t jump = (uint16_t)(chunk->code[++offset] << 8);
+	jump |= chunk->code[++offset];
+	printf("%-16s %4d -> %d\n", NAME, offset, offset + 1 + SIGN * jump);
 	return offset + 1;
 }

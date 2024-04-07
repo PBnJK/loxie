@@ -58,7 +58,7 @@ static uint32_t _hashNumber(const NEAT_NUMBER KEY) {
  * @return Hash do valor @a VALUE
  */
 static uint32_t _hashValue(const Value VALUE) {
-	switch( VALUE.type ) {
+	switch( GET_TYPE(VALUE) ) {
 		case VALUE_BOOL:
 			/* Mesma hash que o Java */
 			return AS_BOOL(VALUE) ? 1231 : 1237;

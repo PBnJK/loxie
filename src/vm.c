@@ -28,7 +28,7 @@
 /**
  * @brief Lê dois bytes e avança o ponteiro
  */
-#define READ_16() (vm.pc += 2, (uint16_t)(vm.pc[-2] | (vm.pc[-1] << 8)))
+#define READ_16() (vm.pc += 2, (uint16_t)(vm.pc[-2] << 8) | vm.pc[-1])
 
 /**
  * @brief Lê três bytes e avança o ponteiro
@@ -56,7 +56,14 @@
  */
 #define READ_GLOBAL_32() (vm.globalValues.values[READ_24()])
 
+/**
+ * @brief Interpreta a próxima constante 8-bit como uma string
+ */
 #define READ_STRING_16() (AS_STRING(READ_CONST_16()))
+
+/**
+ * @brief Interpreta a próxima constante 24-bit como uma string
+ */
 #define READ_STRING_32() (AS_STRING(READ_CONST_32()))
 
 /**
@@ -131,16 +138,20 @@ static void _concatenate(void) {
 void vmInitStack(void) {
 	vm.stack = MEM_GROW_ARRAY(Value, vm.stack, (size_t)(vm.stackTop - vm.stack),
 							  vm.stackMax);
+
 	_resetStack();
 }
 
 void vmInit(void) {
 	vm.objects = NULL;
+	vm.stackMax = 0;
 
 	tableInit(&vm.globalNames);
 	valueArrayInit(&vm.globalValues);
 
 	tableInit(&vm.strings);
+
+	_resetStack();
 }
 
 void vmFree(void) {
@@ -162,7 +173,6 @@ Value vmPop(void) {
 }
 
 size_t vmGetLine(void) {
-	printf("got A\n");
 	return chunkGetLine(vm.chunk, vm.pc - vm.chunk->code - 1);
 }
 
@@ -223,6 +233,18 @@ static Result _run(void) {
 				READ_GLOBAL_32() = vmPop();
 				break;
 
+			case OP_DEF_CONST_16: {
+				const uint8_t INDEX = READ_8();
+				vm.globalValues.values[INDEX] = vmPop();
+				vm.globalValues.values[INDEX].props |= 0x08;
+			} break;
+
+			case OP_DEF_CONST_32: {
+				const size_t INDEX = READ_24();
+				vm.globalValues.values[INDEX] = vmPop();
+				vm.globalValues.values[INDEX].props |= 0x08;
+			} break;
+
 			case OP_GET_GLOBAL_16: {
 				Value value = READ_GLOBAL_16();
 				if( IS_EMPTY(value) ) {
@@ -234,6 +256,16 @@ static Result _run(void) {
 				vmPush(value);
 				break;
 			}
+
+			case OP_GET_LOCAL_16: {
+				uint8_t slot = READ_8();
+				vmPush(vm.stack[slot]);
+			} break;
+
+			case OP_GET_LOCAL_32: {
+				uint8_t slot = READ_24();
+				vmPush(vm.stack[slot]);
+			} break;
 
 			case OP_GET_GLOBAL_32: {
 				Value value = READ_GLOBAL_32();
@@ -251,8 +283,10 @@ static Result _run(void) {
 				uint8_t index = READ_8();
 				Value value = vm.globalValues.values[index];
 				if( IS_EMPTY(value) ) {
-					RUNTIME_ERROR("Variavel indefinida '%s'.",
-								  AS_STRING(value)->str);
+					RUNTIME_ERROR("Variavel indefinida");
+					return RESULT_RUNTIME_ERROR;
+				} else if( IS_CONSTANT(value) ) {
+					RUNTIME_ERROR("Tentou redefinir um valor constante");
 					return RESULT_RUNTIME_ERROR;
 				}
 
@@ -263,13 +297,24 @@ static Result _run(void) {
 				uint32_t index = READ_24();
 				Value value = vm.globalValues.values[index];
 				if( IS_EMPTY(value) ) {
-					RUNTIME_ERROR("Variavel indefinida '%s'.",
-								  AS_STRING(value)->str);
+					RUNTIME_ERROR("Variavel indefinida");
+					return RESULT_RUNTIME_ERROR;
+				} else if( IS_CONSTANT(value) ) {
+					RUNTIME_ERROR("Tentou redefinir um valor constante");
 					return RESULT_RUNTIME_ERROR;
 				}
 
 				vm.globalValues.values[index] = _peek(0);
+			} break;
 
+			case OP_SET_LOCAL_16: {
+				uint8_t slot = READ_8();
+				vm.stack[slot] = _peek(0);
+			} break;
+
+			case OP_SET_LOCAL_32: {
+				uint8_t slot = READ_24();
+				vm.stack[slot] = _peek(0);
 			} break;
 
 			case OP_EQUAL: {
@@ -329,7 +374,6 @@ static Result _run(void) {
 
 				double b = AS_NUMBER(vmPop());
 				double a = AS_NUMBER(vmPop());
-				printf("Getting %g %% %g\n", a, b);
 				vmPush(CREATE_NUMBER(fmod(a, b)));
 			} break;
 
@@ -351,6 +395,18 @@ static Result _run(void) {
 				printf("\n");
 				return RESULT_OK;
 
+			case OP_JUMP: {
+				const uint16_t OFFSET = READ_16();
+				vm.pc += OFFSET;
+			} break;
+
+			case OP_JUMP_IF_FALSE: {
+				const uint16_t OFFSET = READ_16();
+				if( _isFalsey(_peek(0)) ) {
+					vm.pc += OFFSET;
+				}
+			} break;
+
 			case OP_RETURN:
 				return RESULT_OK;
 
@@ -365,8 +421,6 @@ static Result _run(void) {
 Result vmInterpret(const char *SOURCE) {
 	Chunk chunk;
 	chunkInit(&chunk);
-
-	vm.stackMax = 0;
 
 	if( !compCompile(SOURCE, &chunk) ) {
 		chunkFree(&chunk);

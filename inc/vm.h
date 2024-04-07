@@ -44,6 +44,9 @@ typedef struct VM {
 
 extern VM vm; /**< Instância global da VM, para acesso externo */
 
+/**
+ * @brief Inicializa a pilha
+ */
 void vmInitStack(void);
 
 /**
