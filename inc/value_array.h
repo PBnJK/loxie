@@ -6,8 +6,8 @@
  * @brief Array de valores
  */
 
-#ifndef GUARD_NEAT_VALUE_ARRAY_H
-#define GUARD_NEAT_VALUE_ARRAY_H
+#ifndef GUARD_LOXIE_VALUE_ARRAY_H
+#define GUARD_LOXIE_VALUE_ARRAY_H
 
 #include "common.h"
 #include "value.h"
@@ -43,4 +43,4 @@ void valueArrayFree(ValueArray *array);
  */
 void valueArrayWrite(ValueArray *array, Value value);
 
-#endif	// GUARD_NEAT_VALUE_ARRAY_H
+#endif	// GUARD_LOXIE_VALUE_ARRAY_H

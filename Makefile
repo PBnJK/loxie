@@ -17,7 +17,7 @@ LD := gcc
 CFLAGS := -Wall -Wextra -pedantic -static-libgcc
 
 # Caminhos
-BASE := C:/neat-lang
+BASE := C:/loxie
 
 SRC := $(BASE)/src
 INC := $(BASE)/inc
@@ -63,7 +63,7 @@ all: $(OBJS)
 	@echo Linking $@
 	@echo ...
 	@echo
-	$(LD) $(OBJS) -o $(OUT)/neatc.exe
+	$(LD) $(OBJS) -o $(OUT)/loxiec.exe
 	@echo
 	@echo All done!
 

@@ -48,7 +48,7 @@ int main(int argc, const char* argv[]) {
 		 * Sai com erro
 		 */
 		errFatal(
-			0, "Invocacao invalida. Utilize assim:\n\t~> neatc.exe [arquivo]");
+			0, "Invocacao invalida. Utilize assim:\n\t~> loxiec.exe [arquivo]");
 		exit(64);
 	}
 

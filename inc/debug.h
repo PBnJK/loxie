@@ -6,8 +6,8 @@
  * @brief Funções para auxiliar o desenvolvimento
  */
 
-#ifndef GUARD_NEAT_DEBUG_H
-#define GUARD_NEAT_DEBUG_H
+#ifndef GUARD_LOXIE_DEBUG_H
+#define GUARD_LOXIE_DEBUG_H
 
 #include "chunk.h"
 #include "common.h"
@@ -35,4 +35,4 @@ void debugDisassembleChunk(Chunk *chunk, const char *NAME);
  */
 size_t debugDisassembleInstruction(Chunk *chunk, size_t offset);
 
-#endif	// GUARD_NEAT_DEBUG_H
+#endif	// GUARD_LOXIE_DEBUG_H

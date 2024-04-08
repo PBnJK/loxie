@@ -3,11 +3,11 @@
  * @author Pedro B.
  * @date 2024.04.03
  *
- * @brief Tokenizador de código da linguagem NEAT
+ * @brief Tokenizador de código da linguagem LOXIE
  */
 
-#ifndef GUARD_NEAT_SCANNER_H
-#define GUARD_NEAT_SCANNER_H
+#ifndef GUARD_LOXIE_SCANNER_H
+#define GUARD_LOXIE_SCANNER_H
 
 #include "common.h"
 #include "token.h"
@@ -26,4 +26,4 @@ void scannerInit(const char *SOURCE);
  */
 Token scanToken(void);
 
-#endif	// GUARD_NEAT_SCANNER_H
+#endif	// GUARD_LOXIE_SCANNER_H

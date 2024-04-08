@@ -393,7 +393,7 @@ static Result _run(void) {
 			case OP_PRINT:
 				valuePrint(vmPop());
 				printf("\n");
-				return RESULT_OK;
+				break;
 
 			case OP_JUMP: {
 				const uint16_t OFFSET = READ_16();
@@ -405,6 +405,11 @@ static Result _run(void) {
 				if( _isFalsey(_peek(0)) ) {
 					vm.pc += OFFSET;
 				}
+			} break;
+
+			case OP_LOOP: {
+				const uint16_t OFFSET = READ_16();
+				vm.pc -= OFFSET;
 			} break;
 
 			case OP_RETURN:

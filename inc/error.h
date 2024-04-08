@@ -6,8 +6,8 @@
  * @brief Helper para registro de erros
  */
 
-#ifndef GUARD_NEAT_ERROR_H
-#define GUARD_NEAT_ERROR_H
+#ifndef GUARD_LOXIE_ERROR_H
+#define GUARD_LOXIE_ERROR_H
 
 #include "common.h"
 
@@ -51,4 +51,4 @@ void errFatal(const size_t LINE, const char *MSG, ...);
  */
 void errWarn(const size_t LINE, const char *MSG, ...);
 
-#endif	// GUARD_NEAT_ERROR_H
+#endif	// GUARD_LOXIE_ERROR_H

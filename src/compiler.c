@@ -3,7 +3,7 @@
  * @author Pedro B.
  * @date 2024.04.02
  *
- * @brief Compila a linguagem NEAT
+ * @brief Compila a linguagem Loxie
  */
 
 #include "compiler.h"
@@ -210,6 +210,18 @@ static void _emitConstantWithOp(const OpCode TYPE_SHORT, const OpCode TYPE_LONG,
 	_emitByte((uint8_t)INDEX);
 }
 
+static void _emitLoop(const int32_t LOOP_START) {
+	_emitByte(OP_LOOP);
+
+	const int32_t OFFSET = _chunk()->count - LOOP_START + 2;
+	if( OFFSET > UINT16_MAX ) {
+		_errorAtPrev("Loop grande demais");
+	}
+
+	_emitByte((OFFSET >> 8) & 0xff);
+	_emitByte(OFFSET & 0xff);
+}
+
 static void _patchJump(const int32_t OFFSET) {
 	const int32_t JUMP = _chunk()->count - OFFSET - 2;
 
@@ -269,33 +281,6 @@ static void _expressionStatement(void) {
 	_expression();
 	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor");
 	_emitPop();
-}
-
-static void _printStatement(void) {
-	_expression();
-	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor");
-	_emitByte(OP_PRINT);
-}
-
-static void _ifStatement(void) {
-	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'if'.");
-	_expression();
-	_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao.");
-
-	const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
-	_emitPop();
-	_statement();
-
-	const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
-
-	_patchJump(THEN_JUMP);
-	_emitPop();
-
-	if( _match(TOKEN_ELSE) ) {
-		_statement();
-	}
-
-	_patchJump(ELSE_JUMP);
 }
 
 static void _synchronize(void) {
@@ -476,6 +461,93 @@ static void _constDeclaration(void) {
 	_defineConst(GLOBAL);
 }
 
+static void _printStatement(void) {
+	_expression();
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor");
+	_emitByte(OP_PRINT);
+}
+
+static void _ifStatement(void) {
+	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'if'.");
+	_expression();
+	_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao.");
+
+	const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+	_emitPop();
+	_statement();
+
+	const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
+
+	_patchJump(THEN_JUMP);
+	_emitPop();
+
+	if( _match(TOKEN_ELSE) ) {
+		_statement();
+	}
+
+	_patchJump(ELSE_JUMP);
+}
+
+static void _whileStatement(void) {
+	const int32_t LOOP_START = _chunk()->count;
+
+	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'while'");
+	_expression();
+	_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao");
+
+	const int32_t EXIT_JUMP = _emitJump(OP_JUMP_IF_FALSE);
+	_emitByte(OP_POP);
+	_statement();
+	_emitLoop(LOOP_START);
+
+	_patchJump(EXIT_JUMP);
+	_emitByte(OP_POP);
+}
+
+static void _forStatement(void) {
+	_beginScope();
+
+	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'for'.");
+	if( _match(TOKEN_LET) ) {
+		_varDeclaration();
+	} else if( !_match(TOKEN_SEMICOLON) ) {
+		_expressionStatement();
+	}
+
+	int32_t loopStart = _chunk()->count;
+	int32_t exitJump = -1;
+	if( !_match(TOKEN_SEMICOLON) ) {
+		_expression();
+		_consume(TOKEN_SEMICOLON, "Esperava ';' depois da condicao");
+
+		exitJump = _emitJump(OP_JUMP_IF_FALSE);
+		_emitByte(OP_POP); /* Condicao */
+	}
+
+	if( !_match(TOKEN_RPAREN) ) {
+		const int32_t BODY_JUMP = _emitJump(OP_JUMP);
+		const int32_t INCREMENT = _chunk()->count;
+
+		_expression();
+		_emitByte(OP_POP);
+		_consume(TOKEN_RPAREN, "Esperava ')' depois das clausulas.");
+
+		_emitLoop(loopStart);
+		loopStart = INCREMENT;
+		_patchJump(BODY_JUMP);
+	}
+
+	_statement();
+	_emitLoop(loopStart);
+
+	if( exitJump != -1 ) {
+		_patchJump(exitJump);
+		_emitByte(OP_POP); /* Condicao */
+	}
+
+	_endScope();
+}
+
 /**
  * @brief Compila uma declaração
  */
@@ -484,6 +556,10 @@ static void _statement(void) {
 		_printStatement();
 	} else if( _match(TOKEN_IF) ) {
 		_ifStatement();
+	} else if( _match(TOKEN_WHILE) ) {
+		_whileStatement();
+	} else if( _match(TOKEN_FOR) ) {
+		_forStatement();
 	} else if( _match(TOKEN_LBRACE) ) {
 		_beginScope();
 		_block();
@@ -522,7 +598,8 @@ static void _grouping(const bool CAN_ASSIGN) {
  * @brief Compila um número
  */
 static void _number(const bool CAN_ASSIGN) {
-	const NEAT_NUMBER NUMBER = (NEAT_NUMBER)strtod(parser.previous.START, NULL);
+	const LOXIE_NUMBER NUMBER =
+		(LOXIE_NUMBER)strtod(parser.previous.START, NULL);
 	_emitConstant(CREATE_NUMBER(NUMBER));
 }
 

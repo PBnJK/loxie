@@ -6,8 +6,8 @@
  * @brief Implementa a máquina virtual (VM) que interpretará o nosso código
  */
 
-#ifndef GUARD_NEAT_VM_H
-#define GUARD_NEAT_VM_H
+#ifndef GUARD_LOXIE_VM_H
+#define GUARD_LOXIE_VM_H
 
 #include "chunk.h"
 #include "common.h"
@@ -88,4 +88,4 @@ void vmPush(Value value);
  */
 Value vmPop(void);
 
-#endif	// GUARD_NEAT_VM_H
+#endif	// GUARD_LOXIE_VM_H

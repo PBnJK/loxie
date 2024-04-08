@@ -31,8 +31,8 @@
  *
  * @return Hash do número @a KEY
  */
-static uint32_t _hashNumber(const NEAT_NUMBER KEY) {
-#ifdef NEAT_USE_32BIT_NUMBERS
+static uint32_t _hashNumber(const LOXIE_NUMBER KEY) {
+#ifdef LOXIE_USE_32BIT_NUMBERS
 	/* hash(x) = x é rápido! */
 	return KEY;
 #else

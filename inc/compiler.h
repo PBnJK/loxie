@@ -3,11 +3,11 @@
  * @author Pedro B.
  * @date 2024.04.02
  *
- * @brief Compila a linguagem NEAT
+ * @brief Compila a linguagem LOXIE
  */
 
-#ifndef GUARD_NEAT_COMPILER_H
-#define GUARD_NEAT_COMPILER_H
+#ifndef GUARD_LOXIE_COMPILER_H
+#define GUARD_LOXIE_COMPILER_H
 
 #include "chunk.h"
 #include "common.h"
@@ -22,4 +22,4 @@
  */
 bool compCompile(const char *SOURCE, Chunk *chunk);
 
-#endif	// GUARD_NEAT_COMPILER_H
+#endif	// GUARD_LOXIE_COMPILER_H

@@ -6,8 +6,8 @@
  * @brief Tokens da linguagem
  */
 
-#ifndef GUARD_NEAT_TOKENS_H
-#define GUARD_NEAT_TOKENS_H
+#ifndef GUARD_LOXIE_TOKENS_H
+#define GUARD_LOXIE_TOKENS_H
 
 #include "common.h"
 
@@ -90,4 +90,4 @@ typedef struct Token {
 	size_t line;   /**< Linha onde o token está */
 } Token;
 
-#endif	// GUARD_NEAT_TOKENS_H
+#endif	// GUARD_LOXIE_TOKENS_H

@@ -6,8 +6,8 @@
  * @brief Lida com operações relacionadas à memória
  */
 
-#ifndef GUARD_NEAT_MEMORY_H
-#define GUARD_NEAT_MEMORY_H
+#ifndef GUARD_LOXIE_MEMORY_H
+#define GUARD_LOXIE_MEMORY_H
 
 #include "common.h"
 #include "object.h"
@@ -69,4 +69,4 @@ void *memRealloc(void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE);
  */
 void memFreeObjects(void);
 
-#endif	// GUARD_NEAT_MEMORY_H
+#endif	// GUARD_LOXIE_MEMORY_H

@@ -6,8 +6,8 @@
  * @brief Interpretador de tokens
  */
 
-#ifndef GUARD_NEAT_PARSER_H
-#define GUARD_NEAT_PARSER_H
+#ifndef GUARD_LOXIE_PARSER_H
+#define GUARD_LOXIE_PARSER_H
 
 #include "common.h"
 #include "token.h"
@@ -53,4 +53,4 @@ typedef struct Parser {
 	bool panicked;	/**< Parser está no "modo pânico"? */
 } Parser;
 
-#endif	// GUARD_NEAT_PARSER_H
+#endif	// GUARD_LOXIE_PARSER_H

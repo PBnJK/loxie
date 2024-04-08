@@ -6,8 +6,8 @@
  * @brief Cabeçalho com as operações que são executadas pela VM
  */
 
-#ifndef GUARD_NEAT_OPCODES_H
-#define GUARD_NEAT_OPCODES_H
+#ifndef GUARD_LOXIE_OPCODES_H
+#define GUARD_LOXIE_OPCODES_H
 
 /**
  * @brief Enum representando todos os OpCodes possíveis
@@ -60,7 +60,9 @@ typedef enum {
 	OP_JUMP = 31,		   /**< Pulo */
 	OP_JUMP_IF_FALSE = 32, /**< Pulo condicional */
 
-	OP_RETURN = 33, /**< Retorna de uma função */
+	OP_LOOP = 33, /**< Inicia um loop */
+
+	OP_RETURN = 34, /**< Retorna de uma função */
 } OpCode;
 
-#endif	// GUARD_NEAT_OPCODES_H
+#endif	// GUARD_LOXIE_OPCODES_H

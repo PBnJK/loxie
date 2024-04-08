@@ -6,8 +6,8 @@
  * @brief Implementação de um hashmap
  */
 
-#ifndef GUARD_NEAT_TABLE_H
-#define GUARD_NEAT_TABLE_H
+#ifndef GUARD_LOXIE_TABLE_H
+#define GUARD_LOXIE_TABLE_H
 
 #include "common.h"
 #include "value.h"
@@ -94,4 +94,4 @@ bool tableDelete(Table *table, const Value KEY);
  */
 void tableCopyTo(Table *from, Table *to);
 
-#endif	// GUARD_NEAT_TABLE_H
+#endif	// GUARD_LOXIE_TABLE_H

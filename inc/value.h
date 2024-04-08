@@ -6,8 +6,8 @@
  * @brief Representação de valores da linguagem
  */
 
-#ifndef GUARD_NEAT_VALUE_H
-#define GUARD_NEAT_VALUE_H
+#ifndef GUARD_LOXIE_VALUE_H
+#define GUARD_LOXIE_VALUE_H
 
 #include "common.h"
 
@@ -40,9 +40,9 @@ typedef struct Value {
 					*         Se este valor é constante
 					*/
 	union {
-		bool vBool;			 /**< Valor booleano */
-		NEAT_NUMBER vNumber; /**< Valor numérico */
-		Obj *vObject;		 /**< Objeto */
+		bool vBool;			  /**< Valor booleano */
+		LOXIE_NUMBER vNumber; /**< Valor numérico */
+		Obj *vObject;		  /**< Objeto */
 	};
 } Value;
 
@@ -70,7 +70,7 @@ typedef struct Value {
 /** Trata um valor como um bool */
 #define AS_BOOL(VALUE) ((VALUE).vBool)
 
-/** Trata um valor como um NEAT_NUMBER */
+/** Trata um valor como um LOXIE_NUMBER */
 #define AS_NUMBER(VALUE) ((VALUE).vNumber)
 
 /** Trata um valor como um objeto */
@@ -118,4 +118,4 @@ bool valueEquals(const Value A, const Value B);
  */
 void valuePrint(Value value);
 
-#endif	// GUARD_NEAT_VALUE_H
+#endif	// GUARD_LOXIE_VALUE_H

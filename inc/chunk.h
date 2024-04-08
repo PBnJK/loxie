@@ -6,8 +6,8 @@
  * @brief Definição de uma sequência de bytes (<i>bytecode</i>)
  */
 
-#ifndef GUARD_NEAT_CHUNK_H
-#define GUARD_NEAT_CHUNK_H
+#ifndef GUARD_LOXIE_CHUNK_H
+#define GUARD_LOXIE_CHUNK_H
 
 #include "common.h"
 #include "value.h"
@@ -105,4 +105,4 @@ size_t chunkWriteConst(Chunk *chunk, Value value, const size_t LINE);
  */
 size_t chunkGetLine(Chunk *chunk, const size_t OFFSET);
 
-#endif	// GUARD_NEAT_CHUNK_H
+#endif	// GUARD_LOXIE_CHUNK_H

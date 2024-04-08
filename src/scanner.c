@@ -3,7 +3,7 @@
  * @author Pedro B.
  * @date 2024.04.03
  *
- * @brief Tokenizador de código da linguagem NEAT
+ * @brief Tokenizador de código da linguagem Loxie
  */
 
 #include "scanner.h"

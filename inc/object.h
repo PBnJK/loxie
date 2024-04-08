@@ -6,8 +6,8 @@
  * @brief Representa um objeto que mora na heap
  */
 
-#ifndef GUARD_NEAT_OBJECT_H
-#define GUARD_NEAT_OBJECT_H
+#ifndef GUARD_LOXIE_OBJECT_H
+#define GUARD_LOXIE_OBJECT_H
 
 #include "common.h"
 #include "value.h"
@@ -102,4 +102,4 @@ ObjString *objCopyString(const char *STR, const size_t LEN);
  */
 void objPrint(const Value VALUE);
 
-#endif	// GUARD_NEAT_OBJECT_H
+#endif	// GUARD_LOXIE_OBJECT_H
