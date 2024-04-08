@@ -1,2 +1,2 @@
 const TEXT = "Constantes sao legais!";
-print TEXT;
+imprima TEXT;

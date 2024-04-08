@@ -326,63 +326,84 @@ static Token _number(void) {
 
 static TokenType _getIdentifierType(void) {
 	switch( *scanner.START ) {
-		case 'a':
-			return _checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c':
 			if( scanner.CURRENT - scanner.START > 1 ) {
 				switch( scanner.START[1] ) {
 					case 'l':
-						return _checkKeyword(2, 3, "ass", TOKEN_CLASS);
+						return _checkKeyword(2, 4, "asse", TOKEN_CLASS);
 					case 'o':
 						return _checkKeyword(2, 3, "nst", TOKEN_CONST);
 				}
 			}
 
 			break;
+
 		case 'e':
-			return _checkKeyword(1, 3, "lse", TOKEN_ELSE);
+			if( scanner.CURRENT - scanner.START > 1 ) {
+				return _checkKeyword(1, 7, "nquanto", TOKEN_WHILE);
+			}
+
+			return TOKEN_AND;
+
 		case 'f':
 			if( scanner.CURRENT - scanner.START > 1 ) {
 				switch( scanner.START[1] ) {
 					case 'a':
-						return _checkKeyword(2, 3, "lse", TOKEN_FALSE);
-					case 'o':
-						return _checkKeyword(2, 1, "r", TOKEN_FOR);
-					case 'n':
-						return (scanner.CURRENT - scanner.START)
-								   ? TOKEN_FN
-								   : TOKEN_IDENTIFIER;
+						return _checkKeyword(2, 3, "lso", TOKEN_FALSE);
+					case 'u':
+						return _checkKeyword(2, 2, "nc", TOKEN_FN);
 				}
 			}
 
 			break;
+
 		case 'i':
-			return _checkKeyword(1, 1, "f", TOKEN_IF);
-		case 'l':
-			return _checkKeyword(1, 2, "et", TOKEN_LET);
-		case 'n':
-			return _checkKeyword(1, 2, "il", TOKEN_NIL);
-		case 'o':
-			return _checkKeyword(1, 1, "r", TOKEN_OR);
-		case 'p':
-			return _checkKeyword(1, 4, "rint", TOKEN_PRINT);
-		case 'r':
-			return _checkKeyword(1, 5, "eturn", TOKEN_RETURN);
-		case 's':
-			return _checkKeyword(1, 4, "uper", TOKEN_SUPER);
-		case 't':
 			if( scanner.CURRENT - scanner.START > 1 ) {
 				switch( scanner.START[1] ) {
-					case 'h':
-						return _checkKeyword(2, 2, "is", TOKEN_THIS);
-					case 'r':
-						return _checkKeyword(2, 2, "ue", TOKEN_TRUE);
+					case 's':
+						return _checkKeyword(2, 2, "to", TOKEN_THIS);
+					case 'm':
+						return _checkKeyword(2, 5, "prima", TOKEN_PRINT);
 				}
 			}
 
 			break;
-		case 'w':
-			return _checkKeyword(1, 4, "hile", TOKEN_WHILE);
+
+		case 'n':
+			return _checkKeyword(1, 3, "ulo", TOKEN_NIL);
+
+		case 'o':
+			return _checkKeyword(1, 1, "u", TOKEN_OR);
+
+		case 'p':
+			return _checkKeyword(1, 3, "ara", TOKEN_FOR);
+
+		case 'r':
+			return _checkKeyword(1, 6, "etorne", TOKEN_RETURN);
+
+		case 's':
+			if( scanner.CURRENT - scanner.START > 1 ) {
+				switch( scanner.START[1] ) {
+					case 'e':
+						return _checkKeyword(2, 3, "nao", TOKEN_ELSE);
+					case 'u':
+						return _checkKeyword(2, 3, "per", TOKEN_SUPER);
+				}
+			}
+
+			return TOKEN_IF;
+
+		case 'v':
+			if( scanner.CURRENT - scanner.START > 1 ) {
+				switch( scanner.START[1] ) {
+					case 'a':
+						return _checkKeyword(2, 1, "r", TOKEN_LET);
+					case 'e':
+						return _checkKeyword(2, 8, "rdadeiro", TOKEN_TRUE);
+				}
+			}
+
+			break;
 	}
 
 	return TOKEN_IDENTIFIER;

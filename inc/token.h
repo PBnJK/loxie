@@ -63,7 +63,7 @@ typedef enum {
 	TOKEN_THIS = 36,  /**< 'this', referência a própria classe */
 	TOKEN_SUPER = 37, /**< 'super', super-classe */
 
-	TOKEN_FN = 38,	   /**< 'fn', Declaração de função */
+	TOKEN_FN = 38,	   /**< 'func', Declaração de função */
 	TOKEN_RETURN = 39, /**< 'return', Retorna de uma função */
 
 	TOKEN_IF = 40,		 /**< 'if', condicional 'se' */
@@ -72,8 +72,8 @@ typedef enum {
 	TOKEN_QUESTION = 43, /**< '?', interrogação */
 
 	TOKEN_PRINT = 44, /**< 'print', imprime uma variável pra tela */
-	TOKEN_LET = 45,	  /**< 'let', declara uma nova variável */
-	TOKEN_CONST = 46, /**< 'let', declara uma nova constante */
+	TOKEN_LET = 45,	  /**< 'var', declara uma nova variável */
+	TOKEN_CONST = 46, /**< 'const', declara uma nova constante */
 
 	TOKEN_ERROR = 47, /**< 'error', emitido quando um erro é detectado */
 	TOKEN_EOF = 48,	  /**< 'eof', fim do arquivo */

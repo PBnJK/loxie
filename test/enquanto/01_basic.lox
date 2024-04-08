@@ -1,0 +1,6 @@
+var i = 10;
+
+enquanto ( i > 0 ) {
+	imprima i;
+	i = i - 1;
+}

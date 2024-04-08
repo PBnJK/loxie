@@ -1,8 +1,8 @@
 {
-	let a = "Oi, ";
-	let b = a + "amigo!";
-	print b;
+	var a = "Oi, ";
+	var b = a + "amigo!";
+	imprima b;
 }
 
-let b = "Outra coisa";
-print b;
+var b = "Outra coisa";
+imprima b;

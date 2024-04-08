@@ -1,10 +1,30 @@
 # - - - - - - - - - - - - - - - - - - - - - - - -
 #
-# Makefile
+# Makefile pro Loxie
 # Compila a linguagem
 # 
-# Uso:
-# mingw32-make -f Makefile [all|clean] [DEBUG=Y]
+# Uso (rode pelo CMD no mesmo diretório do Makefile):
+# make -f Makefile [all|fresh|clean|reformat|document] [RELEASE="Y"]  \
+#                  [PRINT_CODE="Y"] [STACK_TRACE="Y"] [STRESS_GC="Y"] \
+#                  [LOG_GC="Y"]
+#
+# Alvos:
+# - all: Compila tudo;
+# - fresh: Limpa os executáveis, objetos, reformata, documenta e compila.
+#          Basicamente compila do zero;
+# - clean: Limpa os executáveis e objetos. CUIDADO! Pode apagar coisar
+#          indesejadas se usado de forma incorreta;
+# - reformat: Reformata o código com clang-format. clang-format precisa
+#             estar no seu PATH;
+# - document: Documenta o código com doxygen. doxygen precisa estar no seu
+#             PATH.
+#
+# Variáveis:
+# - RELEASE: Compila com otimizações (e sem debug symbols);
+# - PRINT_CODE: Imprime os opcodes gerados durante a compilação;
+# - STACK_TRACE: Imprime o estado da pilha + opcodes durante a interpretação;
+# - STRESS_GC: Tenta limpar o lixo todo o tempo possível;
+# - LOG_GC: Imprime o que o coletor de lixo está fazendo atualmente.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -14,10 +34,10 @@
 CC := gcc
 LD := gcc
 
-CFLAGS := -Wall -Wextra -pedantic -static-libgcc
+CFLAGS := -Wall -Wextra -pedantic
 
 # Caminhos
-BASE := C:/loxie
+BASE := $(CURDIR)
 
 SRC := $(BASE)/src
 INC := $(BASE)/inc
