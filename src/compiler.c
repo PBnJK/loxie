@@ -24,25 +24,29 @@
 #include "debug.h"
 #endif
 
+/** Número máximo de casos em um escolha-caso */
+#define MAX_CASES 256
+
 /**
  * @brief Struct representando uma variável local
  */
 typedef struct Local {
-	Token name;
-	int16_t depth;
+	Token name;	   /**< Token representando a variável */
+	int16_t depth; /**< Escopo da variável */
 } Local;
 
 /**
  * @brief Struct representando o compilador
  */
 typedef struct Compiler {
-	Local locals[UINT8_COUNT];
-	int16_t localCount;
-	int16_t scope;
+	Local locals[UINT8_COUNT]; /**< Array com variáveis locais */
+	int16_t localCount;		   /**< Quantidade de variáveis locais */
+	int16_t scope;			   /**< Escopo das variáveis */
 } Compiler;
 
-uint16_t stackMax = 0; /**< Quantidade máxima de valores que serão inseridos n
-						 pilha */
+uint16_t stackMax = 0;		 /**< Máximo de valores que estarão na pilha */
+int16_t innerLoopStart = -1; /**< Começo do loop mais interno */
+int16_t innerLoopScope = 0;	 /**< Profundidade do loop mais interno */
 
 Parser parser = {0};	  /**< Instância global do Parser */
 Compiler* current = NULL; /**< Ponteiro pro compilador atual */
@@ -66,6 +70,12 @@ static void _increaseStackMax(void) {
 	++stackMax;
 	if( stackMax >= vm.stackMax ) {
 		vm.stackMax = stackMax;
+	}
+}
+
+static void _decreaseStackMax(void) {
+	if( stackMax > 0 ) {
+		--stackMax;
 	}
 }
 
@@ -162,7 +172,7 @@ static void _emitBytes(const uint8_t BYTE1, const uint8_t BYTE2) {
  * @brief Emite uma instrução pop
  */
 static void _emitPop(void) {
-	--stackMax;
+	_decreaseStackMax();
 	_emitByte(OP_POP);
 }
 
@@ -399,7 +409,7 @@ static void _defineVariable(const uint32_t GLOBAL) {
 		return;
 	}
 
-	--stackMax;
+	_decreaseStackMax();
 	_emitConstantWithOp(OP_DEF_GLOBAL_16, OP_DEF_GLOBAL_32, GLOBAL);
 }
 
@@ -409,7 +419,7 @@ static void _defineConst(const uint32_t GLOBAL) {
 		return;
 	}
 
-	--stackMax;
+	_decreaseStackMax();
 	_emitConstantWithOp(OP_DEF_CONST_16, OP_DEF_CONST_32, GLOBAL);
 }
 
@@ -488,20 +498,125 @@ static void _ifStatement(void) {
 	_patchJump(ELSE_JUMP);
 }
 
+static void _switchStatement(void) {
+	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'escolha'.");
+	_expression();
+	_consume(TOKEN_RPAREN, "Esperava ')' depois do valor.");
+
+	_consume(TOKEN_LBRACE, "Esperava '{' depois da condicao.");
+
+	bool hasAnyCase = false;	 /* Se você já adicionou um caso */
+	bool hasDefaultCase = false; /* Se você já adicionou o caso padrão */
+
+	int16_t cases[MAX_CASES];  /* Onde os casos acabam */
+	int16_t caseCount = 0;	   /* Quantidade de casos */
+	int32_t skipPrevCase = -1; /* Posição onde acabou o último caso */
+
+	while( !_match(TOKEN_RBRACE) && !_check(TOKEN_EOF) ) {
+		if( _match(TOKEN_CASE) || _match(TOKEN_DEFAULT) ) {
+			if( caseCount == MAX_CASES ) {
+				_errorAtPrev("So e possivel ter 256 casos em um escolha-caso");
+			}
+
+			const TokenType TYPE = parser.previous.type;
+
+			if( hasDefaultCase ) {
+				_errorAtPrev(
+					"Nao e possivel ter outro caso apos o caso padrao");
+			} else if( hasAnyCase ) {
+				cases[caseCount++] = _emitJump(OP_JUMP);
+
+				_patchJump(skipPrevCase);
+				_emitPop();
+			}
+
+			if( TYPE == TOKEN_CASE ) {
+				hasAnyCase = true;
+
+				/* Duplicamos o valor... */
+				_emitByte(OP_DUP);
+
+				/* ...consumimos o caso ... */
+				_expression();
+				_consume(TOKEN_COLON, "Esperava ':' depois do caso");
+
+				/* ...e comparamos com o valor
+				 * Se for falso, pulamos pro próximo
+				 */
+				_emitByte(OP_EQUAL);
+				skipPrevCase = _emitJump(OP_JUMP_IF_FALSE);
+
+				_emitPop();
+			} else { /* Caso padrão */
+				hasDefaultCase = true;
+
+				_consume(TOKEN_COLON, "Esperava ':' depois do caso padrao");
+				skipPrevCase = -1;
+			}
+		} else {
+			if( !hasAnyCase ) {
+				/* Nenhum caso, logo damos erro! */
+				_errorAtPrev("Esperava um caso");
+			}
+
+			/* Estamos dentro de um caso,
+			 * então processamos a declaração
+			 */
+			_statement();
+		}
+	}
+
+	if( !hasDefaultCase ) {
+		/* Sem caso padrão */
+		_patchJump(skipPrevCase);
+		_emitPop();
+	}
+
+	for( int8_t curCase = 0; curCase < caseCount; ++curCase ) {
+		_patchJump(cases[curCase]);
+	}
+
+	_emitPop();
+}
+
+static void _fixUpBreaks(void) {
+	int32_t offset = innerLoopStart;
+	Chunk* chunk = _chunk();
+
+	while( offset < chunk->count ) {
+		if( chunk->code[offset] == OP_BREAK ) {
+			chunk->code[offset] = OP_JUMP;
+			_patchJump(offset + 1);
+		} else {
+			++offset;
+		}
+	}
+}
+
 static void _whileStatement(void) {
-	const int32_t LOOP_START = _chunk()->count;
+	/* Variáveis necessárias pro 'continue' e 'saia' */
+	int16_t topLoopStart = innerLoopStart;
+	int16_t topLoopScope = innerLoopScope;
+	innerLoopStart = _chunk()->count;
+	innerLoopScope = current->scope;
 
 	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'while'");
 	_expression();
 	_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao");
 
-	const int32_t EXIT_JUMP = _emitJump(OP_JUMP_IF_FALSE);
-	_emitByte(OP_POP);
-	_statement();
-	_emitLoop(LOOP_START);
+	int32_t loopEnd = _emitJump(OP_JUMP_IF_FALSE);
 
-	_patchJump(EXIT_JUMP);
-	_emitByte(OP_POP);
+	_emitPop();
+	_statement();
+	_emitLoop(innerLoopStart);
+
+	_patchJump(loopEnd);
+	_emitPop();
+
+	_fixUpBreaks();
+
+	innerLoopStart = topLoopStart;
+	innerLoopScope = topLoopScope;
 }
 
 static void _forStatement(void) {
@@ -510,18 +625,25 @@ static void _forStatement(void) {
 	_consume(TOKEN_LPAREN, "Esperava '(' depois do 'for'.");
 	if( _match(TOKEN_LET) ) {
 		_varDeclaration();
-	} else if( !_match(TOKEN_SEMICOLON) ) {
+	} else if( _match(TOKEN_SEMICOLON) ) {
+		/* Sem inicializador */
+	} else {
 		_expressionStatement();
 	}
 
-	int32_t loopStart = _chunk()->count;
-	int32_t exitJump = -1;
+	/* Variáveis necessárias pro 'continue' e 'saia' */
+	int16_t topLoopStart = innerLoopStart;
+	int16_t topLoopScope = innerLoopScope;
+	innerLoopStart = _chunk()->count;
+	innerLoopScope = current->scope;
+
+	int32_t loopEnd = -1;
 	if( !_match(TOKEN_SEMICOLON) ) {
 		_expression();
 		_consume(TOKEN_SEMICOLON, "Esperava ';' depois da condicao");
 
-		exitJump = _emitJump(OP_JUMP_IF_FALSE);
-		_emitByte(OP_POP); /* Condicao */
+		loopEnd = _emitJump(OP_JUMP_IF_FALSE);
+		_emitByte(OP_POP); /* Condicão */
 	}
 
 	if( !_match(TOKEN_RPAREN) ) {
@@ -532,20 +654,56 @@ static void _forStatement(void) {
 		_emitByte(OP_POP);
 		_consume(TOKEN_RPAREN, "Esperava ')' depois das clausulas.");
 
-		_emitLoop(loopStart);
-		loopStart = INCREMENT;
+		_emitLoop(innerLoopStart);
+		innerLoopStart = INCREMENT;
 		_patchJump(BODY_JUMP);
 	}
 
 	_statement();
-	_emitLoop(loopStart);
+	_emitLoop(innerLoopStart);
 
-	if( exitJump != -1 ) {
-		_patchJump(exitJump);
+	if( loopEnd != -1 ) {
+		_patchJump(loopEnd);
 		_emitByte(OP_POP); /* Condicao */
+		_fixUpBreaks();
 	}
 
+	innerLoopStart = topLoopStart;
+	innerLoopScope = topLoopScope;
+
 	_endScope();
+}
+
+static void _discardLocals(void) {
+	for( int16_t i = current->localCount - 1;
+		 i >= 0 && current->locals[i].depth > innerLoopScope; --i ) {
+		_emitPop();
+	}
+}
+
+static void _breakStatement(void) {
+	if( innerLoopStart == -1 ) {
+		_errorAtPrev("Nao e possivel usar o 'saia' fora de um loop");
+	}
+
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do 'saia'");
+
+	_discardLocals();
+
+	_emitJump(OP_BREAK);
+}
+
+static void _continueStatement(void) {
+	if( innerLoopStart == -1 ) {
+		_errorAtPrev("Nao e possivel usar o 'continue' fora de um loop");
+	}
+
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois do 'continue'");
+
+	_discardLocals();
+
+	/* Retornamos pro início do loop */
+	_emitLoop(innerLoopStart);
 }
 
 /**
@@ -556,10 +714,16 @@ static void _statement(void) {
 		_printStatement();
 	} else if( _match(TOKEN_IF) ) {
 		_ifStatement();
+	} else if( _match(TOKEN_SWITCH) ) {
+		_switchStatement();
 	} else if( _match(TOKEN_WHILE) ) {
 		_whileStatement();
 	} else if( _match(TOKEN_FOR) ) {
 		_forStatement();
+	} else if( _match(TOKEN_BREAK) ) {
+		_breakStatement();
+	} else if( _match(TOKEN_CONTINUE) ) {
+		_continueStatement();
 	} else if( _match(TOKEN_LBRACE) ) {
 		_beginScope();
 		_block();
@@ -686,7 +850,7 @@ static void _binary(const bool CAN_ASSIGN) {
 	ParseRule* rule = _getRule(OP_TYPE);
 	_precedence((Precedence)(rule->precedence + 1));
 
-	--stackMax;
+	_decreaseStackMax();
 
 	switch( OP_TYPE ) {
 		case TOKEN_PLUS:
@@ -728,24 +892,6 @@ static void _binary(const bool CAN_ASSIGN) {
 }
 
 static void _conditional(const bool CAN_ASSIGN) {
-	/*	_expression();
-		_consume(TOKEN_RPAREN, "Esperava ')' depois da condicao.");
-
-		const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
-		_emitPop();
-		_statement();
-
-		const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
-
-		_patchJump(THEN_JUMP);
-		_emitPop();
-
-		if( _match(TOKEN_ELSE) ) {
-			_statement();
-		}
-
-		_patchJump(ELSE_JUMP); */
-
 	const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
 	_emitPop();
 	_expression();
@@ -783,8 +929,8 @@ ParseRule rules[] = {
 	[TOKEN_BANG] = {_unary, NULL, PREC_NONE},
 
 	[TOKEN_BANG_EQUAL] = {NULL, _binary, PREC_EQUALITY},
-	[TOKEN_EQUAL] = {NULL, _binary, PREC_EQUALITY},
-	[TOKEN_EQUAL_EQUAL] = {NULL, _binary, PREC_COMPARISON},
+	[TOKEN_EQUAL] = {NULL, _binary, PREC_NONE},
+	[TOKEN_EQUAL_EQUAL] = {NULL, _binary, PREC_EQUALITY},
 	[TOKEN_LESS] = {NULL, _binary, PREC_COMPARISON},
 	[TOKEN_LESS_EQUAL] = {NULL, _binary, PREC_COMPARISON},
 	[TOKEN_GREATER] = {NULL, _binary, PREC_COMPARISON},

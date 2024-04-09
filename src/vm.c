@@ -412,6 +412,10 @@ static Result _run(void) {
 				vm.pc -= OFFSET;
 			} break;
 
+			case OP_DUP:
+				vmPush(_peek(0));
+				break;
+
 			case OP_RETURN:
 				return RESULT_OK;
 

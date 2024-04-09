@@ -186,6 +186,10 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _jumpOp("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		case OP_LOOP:
 			return _jumpOp("OP_LOOP", -1, chunk, offset);
+		case OP_BREAK:
+			return _simpleOp("OP_JUMP", offset);
+		case OP_DUP:
+			return _simpleOp("OP_DUP", offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:

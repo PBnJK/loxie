@@ -1,0 +1,18 @@
+var i = 10;
+var loops = 1;
+
+enquanto ( i > 0 ) {
+	se( i == 5 ) {
+		se( loops < 4 ) {
+			i = 10;
+			loops = loops + 1;
+			continue;
+		}
+
+		i = 0;
+	}
+
+	imprima i;
+	i = i - 1;
+}
+

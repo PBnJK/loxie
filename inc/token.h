@@ -49,34 +49,40 @@ typedef enum {
 	TOKEN_INTERPOLATION = 26, /**< String interpolada (f-strings) */
 	TOKEN_NUMBER = 27,		  /**< Um número */
 
-	TOKEN_AND = 28, /**< 'and', 'e' lógico */
-	TOKEN_OR = 29,	/**< 'or', 'ou' lógico */
+	TOKEN_AND = 28, /**< 'e' lógico */
+	TOKEN_OR = 29,	/**< v'ou' lógico */
 
-	TOKEN_TRUE = 30,  /**< 'true', valor verdadeiro */
-	TOKEN_FALSE = 31, /**< 'falso', valor falso */
-	TOKEN_NIL = 32,	  /**< 'nill', valor nulo */
+	TOKEN_TRUE = 30,  /**< 'verdadeiro' */
+	TOKEN_FALSE = 31, /**< 'falso' */
+	TOKEN_NIL = 32,	  /**< 'nulo' */
 
-	TOKEN_FOR = 33,	  /**< 'for', loop 'para x em y faça' */
-	TOKEN_WHILE = 34, /**< 'while', loop 'enquanto x faça' */
+	TOKEN_FOR = 33,		 /**< 'para', loop 'para x em y faça' */
+	TOKEN_WHILE = 34,	 /**< 'enquanto', loop 'enquanto x faça' */
+	TOKEN_BREAK = 35,	 /**< 'saia', sai de um loop */
+	TOKEN_CONTINUE = 36, /**< 'continue', volta pro inicio do loop
+						   ("pula" um passo) */
 
-	TOKEN_CLASS = 35, /**< 'class', classe OOP */
-	TOKEN_THIS = 36,  /**< 'this', referência a própria classe */
-	TOKEN_SUPER = 37, /**< 'super', super-classe */
+	TOKEN_CLASS = 37, /**< 'classe', classe OOP */
+	TOKEN_THIS = 38,  /**< 'isto', referência a própria classe */
+	TOKEN_SUPER = 39, /**< 'super', super-classe */
 
-	TOKEN_FN = 38,	   /**< 'func', Declaração de função */
-	TOKEN_RETURN = 39, /**< 'return', Retorna de uma função */
+	TOKEN_FN = 40,	   /**< 'func', Declaração de função */
+	TOKEN_RETURN = 41, /**< 'retorne', Retorna de uma função */
 
-	TOKEN_IF = 40,		 /**< 'if', condicional 'se' */
-	TOKEN_ELSE = 41,	 /**< 'else', condicional 'caso contrário' */
-	TOKEN_COLON = 42,	 /**< ':', dois pontos */
-	TOKEN_QUESTION = 43, /**< '?', interrogação */
+	TOKEN_IF = 42,		 /**< 'se', condicional */
+	TOKEN_ELSE = 43,	 /**< 'senao', condicional 'caso contrário' */
+	TOKEN_SWITCH = 44,	 /**< 'escola', condicional múltipla */
+	TOKEN_CASE = 45,	 /**< 'caso', caso em uma condicional múltipla */
+	TOKEN_DEFAULT = 46,	 /**< 'padrao', caso padrao da condicional múltipla */
+	TOKEN_COLON = 47,	 /**< ':', dois pontos */
+	TOKEN_QUESTION = 48, /**< '?', interrogação */
 
-	TOKEN_PRINT = 44, /**< 'print', imprime uma variável pra tela */
-	TOKEN_LET = 45,	  /**< 'var', declara uma nova variável */
-	TOKEN_CONST = 46, /**< 'const', declara uma nova constante */
+	TOKEN_PRINT = 49, /**< 'print', imprime uma variável pra tela */
+	TOKEN_LET = 50,	  /**< 'var', declara uma nova variável */
+	TOKEN_CONST = 51, /**< 'const', declara uma nova constante */
 
-	TOKEN_ERROR = 47, /**< 'error', emitido quando um erro é detectado */
-	TOKEN_EOF = 48,	  /**< 'eof', fim do arquivo */
+	TOKEN_ERROR = 52, /**< 'error', emitido quando um erro é detectado */
+	TOKEN_EOF = 53,	  /**< 'eof', fim do arquivo */
 } TokenType;
 
 /**

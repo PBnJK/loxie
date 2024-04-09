@@ -1,0 +1,12 @@
+escolha (2) {
+	caso 1:
+		imprima "caso 1";
+	caso 2:
+		imprima "caso 2";
+	caso 3:
+		imprima "caso 3";
+	padrao:
+		imprima "padrao";
+}
+
+imprima "fim :)";

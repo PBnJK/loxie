@@ -60,9 +60,12 @@ typedef enum {
 	OP_JUMP = 31,		   /**< Pulo */
 	OP_JUMP_IF_FALSE = 32, /**< Pulo condicional */
 
-	OP_LOOP = 33, /**< Inicia um loop */
+	OP_LOOP = 33,  /**< Inicia um loop */
+	OP_BREAK = 34, /**< Sai de um loop */
 
-	OP_RETURN = 34, /**< Retorna de uma função */
+	OP_DUP = 35, /**< Duplica o item no topo da pilha */
+
+	OP_RETURN = 36, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_LOXIE_OPCODES_H
