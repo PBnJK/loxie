@@ -95,6 +95,8 @@ static size_t _local32Op(const char* NAME, Chunk* chunk, size_t offset);
 static size_t _jumpOp(const char* NAME, const int8_t SIGN, Chunk* chunk,
 					  size_t offset);
 
+static size_t _byteOp(const char* NAME, Chunk* chunk, size_t offset);
+
 void debugDisassembleChunk(Chunk* chunk, const char* NAME) {
 	printf("=== %s ===\n", NAME);
 
@@ -190,6 +192,8 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _simpleOp("OP_JUMP", offset);
 		case OP_DUP:
 			return _simpleOp("OP_DUP", offset);
+		case OP_CALL:
+			return _byteOp("OP_CALL", chunk, offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:
@@ -267,5 +271,12 @@ static size_t _jumpOp(const char* NAME, const int8_t SIGN, Chunk* chunk,
 	uint16_t jump = (uint16_t)(chunk->code[++offset] << 8);
 	jump |= chunk->code[++offset];
 	printf("%-16s %4d -> %d\n", NAME, offset, offset + 1 + SIGN * jump);
+	return offset + 1;
+}
+
+static size_t _byteOp(const char* NAME, Chunk* chunk, size_t offset) {
+	const uint8_t CONST = chunk->code[++offset];
+	printf("%-16s %4d\n", NAME, CONST);
+
 	return offset + 1;
 }

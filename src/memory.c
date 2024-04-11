@@ -19,8 +19,15 @@ static void _freeObject(Obj *object) {
 			ObjString *obj = (ObjString *)object;
 			obj = memRealloc(obj, sizeof(ObjString) + obj->length + 1, 0);
 		} break;
+
+		case OBJ_FUNCTION: {
+			ObjFunction *obj = (ObjFunction *)object;
+			chunkFree(&obj->chunk);
+			MEM_FREE(ObjFunction, obj);
+		} break;
+
 		default:
-			errFatal(vmGetLine(),
+			errFatal(vmGetLine(0),
 					 "Tentou liberar um objeto de tipo desconhecido %u",
 					 object->type);
 	}
@@ -43,7 +50,7 @@ void *memRealloc(void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE) {
 		 *
 		 * De qualquer forma, sai com código ERR_UNAVAILABLE
 		 */
-		errFatal(vmGetLine(), "Nao foi possivel alocar memoria!");
+		errFatal(vmGetLine(0), "Nao foi possivel alocar memoria!");
 		exit(69);
 	}
 

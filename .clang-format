@@ -17,3 +17,4 @@ SpacesInParensOptions:
 
 AllowShortFunctionsOnASingleLine: Empty
 
+PointerAlignment: Right

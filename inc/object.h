@@ -9,6 +9,7 @@
 #ifndef GUARD_LOXIE_OBJECT_H
 #define GUARD_LOXIE_OBJECT_H
 
+#include "chunk.h"
 #include "common.h"
 #include "value.h"
 
@@ -16,7 +17,8 @@
  * @brief Enum representando todos os tipos de objetos que existem
  */
 typedef enum {
-	OBJ_STRING = 0,
+	OBJ_STRING = 0,	  /**< Objeto tipo string */
+	OBJ_FUNCTION = 1, /**< Objeto representando uma função */
 } ObjType;
 
 /**
@@ -40,17 +42,33 @@ struct ObjString {
 	char str[];	   /**< Caracteres que compõe a string */
 };
 
+/**
+ * @brief Struct representando uma função
+ */
+typedef struct ObjFunction {
+	Obj obj;		 /**< Objeto base */
+	uint8_t arity;	 /**< Quantidade de argumentos que a função recebe */
+	Chunk chunk;	 /**< Chunk de código dentro da função */
+	ObjString *name; /**< O nome da função */
+} ObjFunction;
+
 /** Retorna o valor de um objeto */
 #define OBJECT_TYPE(VALUE) (AS_OBJECT(VALUE)->type)
 
-/** Verifica se um objeto é do tipo string */
+/** Verifica se um objeto é uma string */
 #define IS_STRING(VALUE) _isObjectOfType(VALUE, OBJ_STRING)
+
+/** Verifica se um objeto é uma função */
+#define IS_FUNCTION(VALUE) _isObjectOfType(VALUE, OBJ_FUNCTION)
 
 /** Trata um objeto como sendo do tipo ObjString */
 #define AS_STRING(VALUE) ((ObjString *)AS_OBJECT(VALUE))
 
 /** Trata um objeto como uma string C */
 #define AS_CSTRING(VALUE) ((AS_STRING(VALUE))->str)
+
+/** Trata um objeto como sendo do tipo ObjFunction */
+#define AS_FUNCTION(VALUE) ((ObjFunction *)AS_OBJECT(VALUE))
 
 /**
  * @brief Verifica se um objeto é de um dado tipo
@@ -68,10 +86,15 @@ static inline bool _isObjectOfType(const Value VALUE, const ObjType TYPE) {
  * @brief Cria um ObjString diretamente da string @a STR
  *
  * @param[in] LEN Tamanho da string
- *
  * @return A string criada
  */
 ObjString *objMakeString(const size_t LEN);
+
+/**
+ * @brief Cria uma função (ObjString)
+ * @return A função criada
+ */
+ObjFunction *objMakeFunction(void);
 
 /**
  * @brief Obtém a hash de uma string

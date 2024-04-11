@@ -11,15 +11,14 @@
 
 #include "chunk.h"
 #include "common.h"
+#include "object.h"
 
 /**
  * @brief Compila o código-fonte para bytecode
  *
  * @param[in] SOURCE Código-fonte que será compilado
- * @param[in] chunk todo
- *
- * @return Verdadeiro se a compilação ocorreu sem erros
+ * @return Função representando o script em si (NULL caso ocorra erro)
  */
-bool compCompile(const char *SOURCE, Chunk *chunk);
+ObjFunction *compCompile(const char *SOURCE);
 
 #endif	// GUARD_LOXIE_COMPILER_H

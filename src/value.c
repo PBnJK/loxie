@@ -30,7 +30,7 @@ bool valueEquals(const Value A, const Value B) {
 		case VALUE_OBJECT:
 			return AS_OBJECT(A) == AS_OBJECT(B);
 		default:
-			errFatal(vmGetLine(), "Tentou comparar %u com %u", GET_TYPE(A),
+			errFatal(vmGetLine(0), "Tentou comparar %u com %u", GET_TYPE(A),
 					 GET_TYPE(B));
 	}
 
@@ -55,6 +55,6 @@ void valuePrint(Value value) {
 			printf("empty");
 			break;
 		default:
-			errFatal(vmGetLine(), "Valor desconhecido %u", GET_TYPE(value));
+			errFatal(vmGetLine(0), "Valor desconhecido %u", GET_TYPE(value));
 	}
 }

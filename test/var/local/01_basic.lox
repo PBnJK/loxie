@@ -1,8 +1,9 @@
+var b = "Outra coisa";
+
 {
 	var a = "Oi, ";
 	var b = a + "amigo!";
 	imprima b;
 }
 
-var b = "Outra coisa";
 imprima b;

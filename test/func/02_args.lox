@@ -1,0 +1,9 @@
+func soma(a, b, c) {
+	retorne a + b + c;
+}
+
+imprima "5 + 6 + 7 =";
+imprima soma(5, 6, 7);
+
+imprima "4 + 5 + 6 + 7 =";
+imprima 4 + soma(5, 6, 7);

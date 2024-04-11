@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "error.h"
+#include "memory.h"
 #include "object.h"
 #include "opcodes.h"
 #include "parser.h"
@@ -36,9 +37,22 @@ typedef struct Local {
 } Local;
 
 /**
+ * @brief Enum representando os tipos de função existentes
+ */
+typedef enum {
+	TYPE_FUNCTION = 0, /**< Função declarada pelo usuário */
+	TYPE_SCRIPT = 1,   /**< O script em si */
+} FunctionType;
+
+/**
  * @brief Struct representando o compilador
  */
 typedef struct Compiler {
+	struct Compiler* enclosing; /**< Compilador que contém este */
+
+	ObjFunction* function; /**< Função sendo compilada */
+	FunctionType type;	   /**< Tipo de função sendo compilada */
+
 	Local locals[UINT8_COUNT]; /**< Array com variáveis locais */
 	int16_t localCount;		   /**< Quantidade de variáveis locais */
 	int16_t scope;			   /**< Escopo das variáveis */
@@ -51,9 +65,8 @@ int16_t innerLoopScope = 0;	 /**< Profundidade do loop mais interno */
 Parser parser = {0};	  /**< Instância global do Parser */
 Compiler* current = NULL; /**< Ponteiro pro compilador atual */
 
-Chunk* currentChunk; /**< Chunk sendo usada atualmente */
 static Chunk* _chunk() {
-	return currentChunk;
+	return &current->function->chunk;
 }
 
 static void _expression(void);
@@ -180,7 +193,28 @@ static void _emitPop(void) {
  * @brief Emite uma instrução de retorno
  */
 static void _emitReturn(void) {
-	_emitByte(OP_RETURN);
+	_emitBytes(OP_NIL, OP_RETURN);
+}
+
+/**
+ * @brief Encerra o compilador
+ */
+static ObjFunction* _end(void) {
+	_emitReturn();
+	ObjFunction* function = current->function;
+
+#ifdef DEBUG_PRINT_CODE
+	if( !parser.hadError ) {
+		debugDisassembleChunk(_chunk(), function->name != NULL
+											? function->name->str
+											: "<script>");
+	}
+#endif
+
+	vmInitStack();
+
+	current = current->enclosing;
+	return function;
 }
 
 /**
@@ -251,11 +285,31 @@ static int32_t _emitJump(const OpCode INSTRUCTION) {
 	return _chunk()->count - 2;
 }
 
-static void _initCompiler(Compiler* compiler) {
+static void _initCompiler(Compiler* compiler, const FunctionType TYPE) {
+	compiler->enclosing = current;
+
+	compiler->function = NULL;
+	compiler->type = TYPE;
+
 	compiler->localCount = 0;
 	compiler->scope = 0;
 
+	compiler->function = objMakeFunction();
+
 	current = compiler;
+	if( TYPE != TYPE_SCRIPT ) {
+		current->function->name =
+			objCopyString(parser.previous.START, parser.previous.length);
+	}
+
+	/* Dedicamos o primeiro slot do array de variáveis locais
+	 * para uso pessoal do compilador
+	 */
+	Local* local = &current->locals[current->localCount++];
+	local->depth = 0;
+	local->name.START = "";
+	local->name.length = 0;
+	local->name.type = TOKEN_NIL;
 }
 
 static void _beginScope(void) {
@@ -303,7 +357,7 @@ static void _synchronize(void) {
 
 		switch( parser.current.type ) {
 			case TOKEN_CLASS:
-			case TOKEN_FN:
+			case TOKEN_FUNC:
 			case TOKEN_LET:
 			case TOKEN_CONST:
 			case TOKEN_FOR:
@@ -358,6 +412,10 @@ static int16_t _resolveLocal(Compiler* compiler, Token* name) {
 }
 
 static void _markInitialized() {
+	if( current->scope == 0 ) {
+		return;
+	}
+
 	current->locals[current->localCount - 1].depth = current->scope;
 }
 
@@ -424,6 +482,8 @@ static void _defineConst(const uint32_t GLOBAL) {
 }
 
 static void _and(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	const int32_t END_JUMP = _emitJump(OP_JUMP_IF_FALSE);
 
 	_emitPop();
@@ -433,6 +493,8 @@ static void _and(const bool CAN_ASSIGN) {
 }
 
 static void _or(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	const int32_t ELSE_JUMP = _emitJump(OP_JUMP_IF_FALSE);
 	const int32_t END_JUMP = _emitJump(OP_JUMP);
 
@@ -441,6 +503,33 @@ static void _or(const bool CAN_ASSIGN) {
 
 	_precedence(PREC_OR);
 	_patchJump(END_JUMP);
+}
+
+static void _function(const FunctionType TYPE) {
+	Compiler compiler;
+	_initCompiler(&compiler, TYPE);
+	_beginScope();
+
+	_consume(TOKEN_LPAREN, "Esperava '(' depois do nome da funcao");
+	if( !_check(TOKEN_RPAREN) ) {
+		do {
+			if( (++current->function->arity) == 0 ) {
+				_errorAtCurr(
+					"Nao e possivel ter uma funcao com >255 parametros.");
+			}
+
+			const size_t CONST = _parseVariable("Esperava parametro");
+			_defineVariable(CONST);
+		} while( _match(TOKEN_COMMA) );
+	}
+
+	_consume(TOKEN_RPAREN, "Esperava ')' depois dos parametros ");
+	_consume(TOKEN_LBRACE, "Esperava '{' antes do corpo da funcao");
+	_block();
+
+	ObjFunction* function = _end();
+	_emitConstantWithOp(OP_CONST_16, OP_CONST_32,
+						_makeConstant(CREATE_OBJECT(function)));
 }
 
 static void _varDeclaration(void) {
@@ -469,6 +558,15 @@ static void _constDeclaration(void) {
 	_consume(TOKEN_SEMICOLON, "Esperava ';' depois de declaração de variável.");
 
 	_defineConst(GLOBAL);
+}
+
+static void _funcDeclaration() {
+	size_t global = _parseVariable("Esperava o nome da função");
+	_markInitialized();
+
+	_function(TYPE_FUNCTION);
+
+	_defineVariable(global);
 }
 
 static void _printStatement(void) {
@@ -579,8 +677,22 @@ static void _switchStatement(void) {
 	_emitPop();
 }
 
+static void _returnStatement() {
+	if( current->type == TYPE_SCRIPT ) {
+		_errorAtPrev("'retorne' so pode ser usado dentro de uma funcao");
+	}
+
+	if( _match(TOKEN_SEMICOLON) ) {
+		_emitReturn();
+	} else {
+		_expression();
+		_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor de retorno");
+		_emitByte(OP_RETURN);
+	}
+}
+
 static void _fixUpBreaks(void) {
-	int32_t offset = innerLoopStart;
+	size_t offset = (size_t)innerLoopStart;
 	Chunk* chunk = _chunk();
 
 	while( offset < chunk->count ) {
@@ -716,6 +828,8 @@ static void _statement(void) {
 		_ifStatement();
 	} else if( _match(TOKEN_SWITCH) ) {
 		_switchStatement();
+	} else if( _match(TOKEN_RETURN) ) {
+		_returnStatement();
 	} else if( _match(TOKEN_WHILE) ) {
 		_whileStatement();
 	} else if( _match(TOKEN_FOR) ) {
@@ -737,7 +851,9 @@ static void _statement(void) {
  * @brief Compila uma declaração de nome
  */
 static void _declaration(void) {
-	if( _match(TOKEN_LET) ) {
+	if( _match(TOKEN_FUNC) ) {
+		_funcDeclaration();
+	} else if( _match(TOKEN_LET) ) {
 		_varDeclaration();
 	} else if( _match(TOKEN_CONST) ) {
 		_constDeclaration();
@@ -754,6 +870,8 @@ static void _declaration(void) {
  * @brief Compila uma expressão de agrupamento
  */
 static void _grouping(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	_expression(); /* Chamada recursiva da função _expression()... */
 	_consume(TOKEN_RPAREN, "Esperava um ')' depois da expressao");
 }
@@ -762,17 +880,81 @@ static void _grouping(const bool CAN_ASSIGN) {
  * @brief Compila um número
  */
 static void _number(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	const LOXIE_NUMBER NUMBER =
 		(LOXIE_NUMBER)strtod(parser.previous.START, NULL);
 	_emitConstant(CREATE_NUMBER(NUMBER));
 }
 
 /**
+ * @brief Analisa uma string
+ *
+ * @param[out] size Tamanho da string construída
+ * @return String construída
+ */
+static char* _parseString(size_t* size) {
+	const size_t MAX_SIZE = parser.previous.length - 2;
+
+	char* newString = MEM_ALLOC(char, MAX_SIZE);
+	ssize_t j = -1;
+
+	for( size_t i = 0; i < MAX_SIZE; ++i ) {
+		++j;
+		const char* CUR_CHAR = (parser.previous.START + 1) + i;
+
+		if( *CUR_CHAR == '\0' ) {
+			newString[j] = '\0';
+			break;
+		}
+
+		if( *CUR_CHAR == '\\' ) {
+			switch( *(CUR_CHAR + 1) ) {
+				case 'r':
+					newString[j] = '\r';
+					++i;
+					break;
+				case 'n':
+					newString[j] = '\n';
+					++i;
+					break;
+				case 't':
+					newString[j] = '\t';
+					++i;
+					break;
+				case '"':
+					newString[j] = '"';
+					++i;
+					break;
+				case '\\':
+					newString[j] = '\\';
+					++i;
+					break;
+				default:
+					_errorAtPrev("Escape sequence invalida");
+					return newString;
+			}
+		} else {
+			newString[j] = *CUR_CHAR;
+		}
+	}
+
+	*size = j + 1;
+
+	newString = memRealloc(newString, MAX_SIZE, *size);
+	return newString;
+}
+
+/**
  * @brief Compila uma string
  */
 static void _string(const bool CAN_ASSIGN) {
-	_emitConstant(CREATE_OBJECT(
-		objCopyString(parser.previous.START + 1, parser.previous.length - 2)));
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	size_t strSize = 0;
+	char* string = _parseString(&strSize);
+
+	_emitConstant(CREATE_OBJECT(objCopyString(string, strSize)));
 }
 
 static void _namedVariable(Token name, const bool CAN_ASSIGN) {
@@ -789,10 +971,10 @@ static void _namedVariable(Token name, const bool CAN_ASSIGN) {
 	}
 
 	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
-		_increaseStackMax();
 		_expression();
 		_emitConstantWithOp(setOp, setOp + 1, arg);
 	} else {
+		_increaseStackMax();
 		_emitConstantWithOp(getOp, getOp + 1, arg);
 	}
 }
@@ -805,6 +987,8 @@ static void _variable(const bool CAN_ASSIGN) {
  * @brief Compila um literal (bool ou nil)
  */
 static void _literal(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	switch( parser.previous.type ) {
 		case TOKEN_TRUE:
 			_emitByte(OP_TRUE);
@@ -824,6 +1008,8 @@ static void _literal(const bool CAN_ASSIGN) {
  * @brief Compila uma expressão unária ( -2, !variável, etc )
  */
 static void _unary(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	const TokenType OP_TYPE = parser.previous.type;
 
 	/* Consumimos o operando... */
@@ -846,6 +1032,8 @@ static void _unary(const bool CAN_ASSIGN) {
  * @brief Compila uma expressão binária ( 2 + 3, a / 5, etc )
  */
 static void _binary(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	const TokenType OP_TYPE = parser.previous.type;
 	ParseRule* rule = _getRule(OP_TYPE);
 	_precedence((Precedence)(rule->precedence + 1));
@@ -891,7 +1079,36 @@ static void _binary(const bool CAN_ASSIGN) {
 	}
 }
 
+static uint8_t _argumentList(void) {
+	uint8_t argCount = 0;
+
+	if( !_check(TOKEN_RPAREN) ) {
+		do {
+			_expression();
+			++argCount;
+			if( argCount == 0 ) {
+				_errorAtPrev(
+					"Nao e possivel ter uma funcao com >255 parametros.");
+			}
+		} while( _match(TOKEN_COMMA) );
+	}
+
+	_consume(TOKEN_RPAREN, "Esperava ')' depois dos parametros.");
+	return argCount;
+}
+
+static void _call(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	_increaseStackMax();
+
+	const uint8_t ARG_COUNT = _argumentList();
+	_emitBytes(OP_CALL, ARG_COUNT);
+}
+
 static void _conditional(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
 	const int32_t THEN_JUMP = _emitJump(OP_JUMP_IF_FALSE);
 	_emitPop();
 	_expression();
@@ -910,7 +1127,7 @@ static void _conditional(const bool CAN_ASSIGN) {
  * @brief Array com as regras que serão usadas na compilação da linguagem
  */
 ParseRule rules[] = {
-	[TOKEN_LPAREN] = {_grouping, NULL, PREC_NONE},
+	[TOKEN_LPAREN] = {_grouping, _call, PREC_CALL},
 	[TOKEN_RPAREN] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LBRACKET] = {NULL, NULL, PREC_NONE},
 	[TOKEN_RBRACKET] = {NULL, NULL, PREC_NONE},
@@ -955,7 +1172,7 @@ ParseRule rules[] = {
 	[TOKEN_THIS] = {NULL, NULL, PREC_NONE},
 	[TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
 
-	[TOKEN_FN] = {NULL, NULL, PREC_NONE},
+	[TOKEN_FUNC] = {NULL, NULL, PREC_NONE},
 	[TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_IF] = {NULL, NULL, PREC_NONE},
@@ -975,38 +1192,23 @@ static ParseRule* _getRule(const TokenType TYPE) {
 	return &rules[TYPE];
 }
 
-/**
- * @brief Encerra o compilador
- */
-static void _end(void) {
-	_emitReturn();
-	vmInitStack();
-
-#ifdef DEBUG_PRINT_CODE
-	if( !parser.hadError ) {
-		debugDisassembleChunk(_chunk(), "<script>");
-	}
-#endif
-}
-
-bool compCompile(const char* SOURCE, Chunk* chunk) {
+ObjFunction* compCompile(const char* SOURCE) {
 	scannerInit(SOURCE);
 
 	Compiler compiler;
-	_initCompiler(&compiler);
+	_initCompiler(&compiler, TYPE_SCRIPT);
 
-	currentChunk = chunk;
 	parser.hadError = parser.panicked = false;
 
-	stackMax = 0;
+	stackMax = 1; /* Local reservada */
 
 	_advance();
 	while( !_match(TOKEN_EOF) ) {
 		_declaration();
 	}
 
-	_end();
-	return !parser.hadError;
+	ObjFunction* func = _end();
+	return parser.hadError ? NULL : func;
 }
 
 static void _errorAt(Token* token, const char* MSG) {

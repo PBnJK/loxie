@@ -292,9 +292,13 @@ Token scanToken(void) {
 }
 
 static Token _string(void) {
-	while( _peek() != '"' && !_atEnd() ) {
+	while( !_atEnd() ) {
 		if( _peek() == '\n' ) {
-			++scanner.line;
+			return _errorToken("String sem aspas finais");
+		}
+
+		if( _peek() == '"' && scanner.CURRENT[-1] != '\\' ) {
+			break;
 		}
 
 		_advance();
@@ -364,7 +368,7 @@ static TokenType _getIdentifierType(void) {
 					case 'a':
 						return _checkKeyword(2, 3, "lso", TOKEN_FALSE);
 					case 'u':
-						return _checkKeyword(2, 2, "nc", TOKEN_FN);
+						return _checkKeyword(2, 2, "nc", TOKEN_FUNC);
 				}
 			}
 

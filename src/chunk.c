@@ -8,6 +8,8 @@
 
 #include "chunk.h"
 
+#include <stdio.h>
+
 #include "memory.h"
 #include "opcodes.h"
 

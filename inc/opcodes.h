@@ -63,9 +63,10 @@ typedef enum {
 	OP_LOOP = 33,  /**< Inicia um loop */
 	OP_BREAK = 34, /**< Sai de um loop */
 
-	OP_DUP = 35, /**< Duplica o item no topo da pilha */
+	OP_DUP = 35,  /**< Duplica o item no topo da pilha */
+	OP_CALL = 36, /**< Chama uma função */
 
-	OP_RETURN = 36, /**< Retorna de uma função */
+	OP_RETURN = 37, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_LOXIE_OPCODES_H

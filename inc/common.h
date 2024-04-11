@@ -33,4 +33,10 @@
 /** Quantidade de valores que podem ser representados por um número 8-bit */
 #define UINT8_COUNT (UINT8_MAX + 1)
 
+/**
+ * @brief Define uma variável como não-utilizada (propositalmente)
+ * @param[in] VAR Variável não-utilizada
+ */
+#define INTENTIONALLY_UNUSED(VAR) ((void)(VAR))
+
 #endif	// GUARD_LOXIE_COMMON_H

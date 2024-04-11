@@ -23,28 +23,27 @@
 /**
  * @brief Lê um byte e avança o ponteiro
  */
-#define READ_8() (*vm.pc++)
+#define READ_8() (*fp++)
 
 /**
  * @brief Lê dois bytes e avança o ponteiro
  */
-#define READ_16() (vm.pc += 2, (uint16_t)(vm.pc[-2] << 8) | vm.pc[-1])
+#define READ_16() (fp += 2, (uint16_t)(fp[-2] << 8) | fp[-1])
 
 /**
  * @brief Lê três bytes e avança o ponteiro
  */
-#define READ_24() \
-	(vm.pc += 3, (uint32_t)(vm.pc[-3] | (vm.pc[-2] << 8) | (vm.pc[-1] << 16)))
+#define READ_24() (fp += 3, (uint32_t)(fp[-3] | (fp[-2] << 8) | (fp[-1] << 16)))
 
 /**
  * @brief Lê uma constante
  */
-#define READ_CONST_16() (vm.chunk->consts.values[READ_8()])
+#define READ_CONST_16() (frame->function->chunk.consts.values[READ_8()])
 
 /**
  * @brief Lê uma constante longa
  */
-#define READ_CONST_32() (vm.chunk->consts.values[READ_24()])
+#define READ_CONST_32() (frame->function->chunk.consts.values[READ_24()])
 
 /**
  * @brief Lê uma global
@@ -86,10 +85,20 @@
 /**
  * @brief Levanta um erro durante a interpretação
  */
-#define RUNTIME_ERROR(FMT, ...)                    \
-	do {                                           \
-		errFatal(vmGetLine(), FMT, ##__VA_ARGS__); \
-		_resetStack();                             \
+#define RUNTIME_ERROR(FMT, ...)                     \
+	do {                                            \
+		frame->fp = fp;                             \
+		errFatal(vmGetLine(0), FMT, ##__VA_ARGS__); \
+		_runtimeError();                            \
+	} while( false )
+
+/**
+ * @brief Levanta um erro durante a interpretação (sem salvar o frame)
+ */
+#define RUNTIME_ERROR_F(FMT, ...)                   \
+	do {                                            \
+		errFatal(vmGetLine(0), FMT, ##__VA_ARGS__); \
+		_runtimeError();                            \
 	} while( false )
 
 VM vm = {0}; /**< Instância global da máquina virtual */
@@ -97,9 +106,9 @@ VM vm = {0}; /**< Instância global da máquina virtual */
 /**
  * @brief Esvazia a pilha
  */
-
 static void _resetStack(void) {
 	vm.stackTop = vm.stack;
+	vm.frameCount = 0;
 }
 
 /**
@@ -133,6 +142,64 @@ static void _concatenate(void) {
 	tableSet(&vm.strings, CREATE_OBJECT(result), CREATE_NIL());
 
 	vmPush(CREATE_OBJECT(result));
+}
+
+static void _runtimeError(void) {
+	fprintf(stderr, COLOR_YELLOW "\nStack trace " COLOR_RESET
+								 "(ultima chamada primeiro):");
+
+	for( int16_t i = vm.frameCount - 2; i >= 0; --i ) {
+		CallFrame *frame = &vm.frames[i];
+		ObjFunction *function = frame->function;
+		const size_t INSTR = frame->fp - function->chunk.code - 1;
+		const size_t LINE = chunkGetLine(&function->chunk, INSTR);
+
+		fprintf(stderr, "\n  L%-4d: ", LINE);
+
+		if( function->name == NULL ) {
+			fprintf(stderr, "no script");
+		} else {
+			fprintf(stderr, "na funcao %s();", function->name->str);
+		}
+	}
+
+	_resetStack();
+}
+
+static bool _call(ObjFunction *function, const uint8_t ARG_COUNT) {
+	CallFrame *frame = &vm.frames[vm.frameCount++];
+
+	if( ARG_COUNT != function->arity ) {
+		RUNTIME_ERROR_F("Esperava %d argumentos mas recebeu %d",
+						function->arity, ARG_COUNT);
+		return false;
+	}
+
+	if( vm.frameCount == FRAMES_MAX ) {
+		RUNTIME_ERROR_F("Overflow da pilha");
+		return false;
+	}
+
+	frame->function = function;
+	frame->fp = function->chunk.code;
+	frame->slots = vm.stackTop - ARG_COUNT - 1;
+
+	return true;
+}
+
+static bool _callValue(Value callee, const uint8_t ARG_COUNT) {
+	if( IS_OBJECT(callee) ) {
+		switch( OBJECT_TYPE(callee) ) {
+			case OBJ_FUNCTION:
+				return _call(AS_FUNCTION(callee), ARG_COUNT);
+			default:
+				break;	// Objeto inchamável
+		}
+	}
+
+	RUNTIME_ERROR_F("So e possivel chamar funcoes e classes");
+
+	return false;
 }
 
 void vmInitStack(void) {
@@ -172,8 +239,11 @@ Value vmPop(void) {
 	return *vm.stackTop;
 }
 
-size_t vmGetLine(void) {
-	return chunkGetLine(vm.chunk, vm.pc - vm.chunk->code - 1);
+size_t vmGetLine(const uint8_t FRAME_IDX) {
+	CallFrame *frame = &vm.frames[FRAME_IDX];
+	const size_t OFFSET = frame->fp - frame->function->chunk.code - 1;
+
+	return chunkGetLine(&frame->function->chunk, OFFSET);
 }
 
 #ifdef DEBUG_TRACE_EXECUTION
@@ -192,10 +262,14 @@ static void _printStack(void) {
 #endif
 
 static Result _run(void) {
+	CallFrame *frame = &vm.frames[vm.frameCount - 1];
+	register uint8_t *fp = frame->fp;
+
 	while( true ) {
 #ifdef DEBUG_TRACE_EXECUTION
 		_printStack();
-		debugDisassembleInstruction(vm.chunk, (size_t)(vm.pc - vm.chunk->code));
+		debugDisassembleInstruction(&frame->function->chunk,
+									(size_t)(fp - frame->function->chunk.code));
 #endif
 		const uint8_t OP = READ_8();
 		switch( OP ) {
@@ -257,16 +331,6 @@ static Result _run(void) {
 				break;
 			}
 
-			case OP_GET_LOCAL_16: {
-				uint8_t slot = READ_8();
-				vmPush(vm.stack[slot]);
-			} break;
-
-			case OP_GET_LOCAL_32: {
-				uint8_t slot = READ_24();
-				vmPush(vm.stack[slot]);
-			} break;
-
 			case OP_GET_GLOBAL_32: {
 				Value value = READ_GLOBAL_32();
 				if( IS_EMPTY(value) ) {
@@ -275,8 +339,18 @@ static Result _run(void) {
 					return RESULT_RUNTIME_ERROR;
 				}
 
-				vmPush(value);
-				break;
+				case OP_GET_LOCAL_16: {
+					uint8_t slot = READ_8();
+					vmPush(frame->slots[slot]);
+				} break;
+
+				case OP_GET_LOCAL_32: {
+					uint8_t slot = READ_24();
+					vmPush(frame->slots[slot]);
+				} break;
+
+					vmPush(value);
+					break;
 			}
 
 			case OP_SET_GLOBAL_16: {
@@ -397,30 +471,56 @@ static Result _run(void) {
 
 			case OP_JUMP: {
 				const uint16_t OFFSET = READ_16();
-				vm.pc += OFFSET;
+				fp += OFFSET;
 			} break;
 
 			case OP_JUMP_IF_FALSE: {
 				const uint16_t OFFSET = READ_16();
 				if( _isFalsey(_peek(0)) ) {
-					vm.pc += OFFSET;
+					fp += OFFSET;
 				}
 			} break;
 
 			case OP_LOOP: {
 				const uint16_t OFFSET = READ_16();
-				vm.pc -= OFFSET;
+				fp -= OFFSET;
 			} break;
 
 			case OP_DUP:
 				vmPush(_peek(0));
 				break;
 
-			case OP_RETURN:
-				return RESULT_OK;
+			case OP_CALL: {
+				const uint8_t ARG_COUNT = READ_8();
+				frame->fp = fp;
+
+				if( !_callValue(_peek(ARG_COUNT), ARG_COUNT) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				frame = &vm.frames[vm.frameCount - 1];
+				fp = frame->fp;
+			} break;
+
+			case OP_RETURN: {
+				Value result = vmPop();
+				frame->fp = fp;
+
+				--vm.frameCount;
+				if( vm.frameCount == 0 ) {
+					vmPop();
+					return RESULT_OK;
+				}
+
+				vm.stackTop = frame->slots;
+				vmPush(result);
+
+				frame = &vm.frames[vm.frameCount - 1];
+				fp = frame->fp;
+			} break;
 
 			default:
-				errWarn(chunkGetLine(vm.chunk, *(vm.pc - 1)),
+				errWarn(chunkGetLine(&frame->function->chunk, *(fp - 1)),
 						"OPCODE desconhecido encontrado! -> ");
 				printf("%02x\n", OP);
 		}
@@ -428,21 +528,15 @@ static Result _run(void) {
 }
 
 Result vmInterpret(const char *SOURCE) {
-	Chunk chunk;
-	chunkInit(&chunk);
-
-	if( !compCompile(SOURCE, &chunk) ) {
-		chunkFree(&chunk);
+	ObjFunction *function = compCompile(SOURCE);
+	if( function == NULL ) {
 		return RESULT_COMPILER_ERROR;
 	}
 
-	vm.chunk = &chunk;
-	vm.pc = vm.chunk->code;
+	vmPush(CREATE_OBJECT(function));
+	_call(function, 0);
 
-	const Result RESULT = _run();
-
-	chunkFree(&chunk);
-	return RESULT;
+	return _run();
 }
 
 #undef READ_8

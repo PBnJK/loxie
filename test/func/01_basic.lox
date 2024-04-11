@@ -1,0 +1,5 @@
+func areWe(levelOfYesness) {
+	imprima "Oh hell yeah we are";
+}
+
+imprima areWe;

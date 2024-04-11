@@ -11,9 +11,13 @@
 
 #include "chunk.h"
 #include "common.h"
+#include "object.h"
 #include "table.h"
 #include "value.h"
 #include "value_array.h"
+
+/** Número máximo de CallFrames */
+#define FRAMES_MAX 64
 
 /**
  * @brief Enum representando o resultado de uma operação da VM
@@ -25,11 +29,27 @@ typedef enum {
 } Result;
 
 /**
+ * @brief Struct representando uma "janela" na pilha
+ *
+ * @code{.unparsed}
+ * Pilha:
+ *    [a . b]
+ * CallFrame:
+ *    [a . b .| c . d |]
+ * @endcode
+ */
+typedef struct CallFrame {
+	ObjFunction *function; /**< Função a qual pertence este CallFrame */
+	uint8_t *fp;		   /**< Frame pointer */
+	Value *slots;		   /**< Variáveis neste CallFrame */
+} CallFrame;
+
+/**
  * @brief Struct representando uma máquina virtual
  */
 typedef struct VM {
-	Chunk *chunk; /**< Chunk sendo interpretada pela máquina virtual */
-	uint8_t *pc;  /**< "Program Counter". Indica o byte sendo interpretado */
+	CallFrame frames[FRAMES_MAX]; /**< CallFrames atuais */
+	int8_t frameCount;			  /**< Quantidade de CallFrames */
 
 	Value *stackTop; /**< O espaço vazio logo após o último item na pilha */
 	Value *stack;	 /**< A pilha de valores */
@@ -63,7 +83,7 @@ void vmFree(void);
  * @brief Retorna a linha em que a VM está atualmente
  * @return A linha atual
  */
-size_t vmGetLine(void);
+size_t vmGetLine(const uint8_t FRAME_IDX);
 
 /**
  * @brief Interpreta o código-fonte

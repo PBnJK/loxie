@@ -31,6 +31,19 @@ static Obj *_allocObject(const size_t SIZE, const ObjType TYPE) {
 	return newObject;
 }
 
+static void _printFunction(ObjFunction *function) {
+	if( function->name == NULL ) {
+		/* Função não tem nome
+		 * Ou o usuário fez algo esquisito, ou este é o script em si
+		 * Vamos apostar na última hipótese...
+		 */
+		printf("<script>");
+		return;
+	}
+
+	printf("<func %s>", function->name->str);
+}
+
 ObjString *objMakeString(const size_t LEN) {
 	ObjString *string =
 		(ObjString *)_allocObject(sizeof(ObjString) + LEN + 1, OBJ_STRING);
@@ -38,6 +51,16 @@ ObjString *objMakeString(const size_t LEN) {
 	string->length = LEN;
 
 	return string;
+}
+
+ObjFunction *objMakeFunction(void) {
+	ObjFunction *function = ALLOC_OBJECT(ObjFunction, OBJ_FUNCTION);
+
+	function->arity = 0;
+	function->name = NULL;
+	chunkInit(&function->chunk);
+
+	return function;
 }
 
 uint32_t hashString(const char *KEY, const size_t LENGTH) {
@@ -71,11 +94,16 @@ ObjString *objCopyString(const char *STR, const size_t LEN) {
 
 void objPrint(const Value VALUE) {
 	switch( OBJECT_TYPE(VALUE) ) {
+		case OBJ_FUNCTION:
+			_printFunction(AS_FUNCTION(VALUE));
+			break;
+
 		case OBJ_STRING:
 			printf("%s", AS_CSTRING(VALUE));
 			break;
+
 		default:
-			errFatal(vmGetLine(),
+			errFatal(vmGetLine(0),
 					 "Tentou imprimir objeto de tipo desconhecido %u",
 					 OBJECT_TYPE(VALUE));
 	}

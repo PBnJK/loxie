@@ -60,13 +60,13 @@ typedef enum {
 	TOKEN_WHILE = 34,	 /**< 'enquanto', loop 'enquanto x faça' */
 	TOKEN_BREAK = 35,	 /**< 'saia', sai de um loop */
 	TOKEN_CONTINUE = 36, /**< 'continue', volta pro inicio do loop
-						   ("pula" um passo) */
+							  ("pula" um passo) */
 
 	TOKEN_CLASS = 37, /**< 'classe', classe OOP */
 	TOKEN_THIS = 38,  /**< 'isto', referência a própria classe */
 	TOKEN_SUPER = 39, /**< 'super', super-classe */
 
-	TOKEN_FN = 40,	   /**< 'func', Declaração de função */
+	TOKEN_FUNC = 40,   /**< 'func', Declaração de função */
 	TOKEN_RETURN = 41, /**< 'retorne', Retorna de uma função */
 
 	TOKEN_IF = 42,		 /**< 'se', condicional */
