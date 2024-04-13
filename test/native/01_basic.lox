@@ -1,0 +1,12 @@
+func fib(n) {
+	se( n < 2 ) {
+		retorne n;
+	}
+
+	retorne fib(n - 2) + fib(n - 1);
+}
+
+var start = cronometro();
+imprima fib(99);
+imprima cronometro() - start;
+

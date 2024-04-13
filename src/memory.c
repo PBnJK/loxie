@@ -8,6 +8,7 @@
 
 #include "memory.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "error.h"
@@ -25,6 +26,10 @@ static void _freeObject(Obj *object) {
 			chunkFree(&obj->chunk);
 			MEM_FREE(ObjFunction, obj);
 		} break;
+
+		case OBJ_NATIVE:
+			MEM_FREE(ObjNative, object);
+			break;
 
 		default:
 			errFatal(vmGetLine(0),

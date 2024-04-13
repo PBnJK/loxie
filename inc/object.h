@@ -19,6 +19,7 @@
 typedef enum {
 	OBJ_STRING = 0,	  /**< Objeto tipo string */
 	OBJ_FUNCTION = 1, /**< Objeto representando uma função */
+	OBJ_NATIVE = 2,	  /**< Objeto representando uma função nativa */
 } ObjType;
 
 /**
@@ -52,6 +53,17 @@ typedef struct ObjFunction {
 	ObjString *name; /**< O nome da função */
 } ObjFunction;
 
+/** Typedef para uma função nativa */
+typedef Value (*NativeFn)(const uint8_t ARG_COUNT, Value *args);
+
+/**
+ * @brief Struct representando uma função nativa
+ */
+typedef struct ObjNative {
+	Obj obj;		   /**< Objeto base */
+	NativeFn function; /**< Função */
+} ObjNative;
+
 /** Retorna o valor de um objeto */
 #define OBJECT_TYPE(VALUE) (AS_OBJECT(VALUE)->type)
 
@@ -61,6 +73,9 @@ typedef struct ObjFunction {
 /** Verifica se um objeto é uma função */
 #define IS_FUNCTION(VALUE) _isObjectOfType(VALUE, OBJ_FUNCTION)
 
+/** Verifica se um objeto é uma função nativa */
+#define IS_NATIVE(VALUE) _isObjectOfType(VALUE, OBJ_NATIVE)
+
 /** Trata um objeto como sendo do tipo ObjString */
 #define AS_STRING(VALUE) ((ObjString *)AS_OBJECT(VALUE))
 
@@ -69,6 +84,12 @@ typedef struct ObjFunction {
 
 /** Trata um objeto como sendo do tipo ObjFunction */
 #define AS_FUNCTION(VALUE) ((ObjFunction *)AS_OBJECT(VALUE))
+
+/** Trata um objeto como sendo do tipo ObjNative */
+#define AS_NATIVE(VALUE) ((ObjNative *)AS_OBJECT(VALUE))
+
+/** Pega a função de um objeto ObjNative */
+#define AS_NATIVE_FN(VALUE) (((ObjNative *)AS_OBJECT(VALUE))->function)
 
 /**
  * @brief Verifica se um objeto é de um dado tipo
@@ -91,10 +112,18 @@ static inline bool _isObjectOfType(const Value VALUE, const ObjType TYPE) {
 ObjString *objMakeString(const size_t LEN);
 
 /**
- * @brief Cria uma função (ObjString)
+ * @brief Cria uma função (ObjFunction)
  * @return A função criada
  */
 ObjFunction *objMakeFunction(void);
+
+/**
+ * @brief Cria uma função nativa (ObjNative)
+ *
+ * @param[in] function Ponteiro pra função
+ * @return A função nativacriada
+ */
+ObjNative *objMakeNative(NativeFn function);
 
 /**
  * @brief Obtém a hash de uma string

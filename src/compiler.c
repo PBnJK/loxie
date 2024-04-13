@@ -86,6 +86,13 @@ static void _increaseStackMax(void) {
 	}
 }
 
+static void _doubleStackMax(void) {
+	stackMax *= 2;
+	if( stackMax >= vm.stackMax ) {
+		vm.stackMax = stackMax;
+	}
+}
+
 static void _decreaseStackMax(void) {
 	if( stackMax > 0 ) {
 		--stackMax;
@@ -193,6 +200,7 @@ static void _emitPop(void) {
  * @brief Emite uma instrução de retorno
  */
 static void _emitReturn(void) {
+	_increaseStackMax();
 	_emitBytes(OP_NIL, OP_RETURN);
 }
 
@@ -687,6 +695,7 @@ static void _returnStatement() {
 	} else {
 		_expression();
 		_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor de retorno");
+		_increaseStackMax();
 		_emitByte(OP_RETURN);
 	}
 }
@@ -940,8 +949,6 @@ static char* _parseString(size_t* size) {
 	}
 
 	*size = j + 1;
-
-	newString = memRealloc(newString, MAX_SIZE, *size);
 	return newString;
 }
 
@@ -1100,7 +1107,7 @@ static uint8_t _argumentList(void) {
 static void _call(const bool CAN_ASSIGN) {
 	INTENTIONALLY_UNUSED(CAN_ASSIGN);
 
-	_increaseStackMax();
+	_doubleStackMax();
 
 	const uint8_t ARG_COUNT = _argumentList();
 	_emitBytes(OP_CALL, ARG_COUNT);
@@ -1178,7 +1185,7 @@ ParseRule rules[] = {
 	[TOKEN_IF] = {NULL, NULL, PREC_NONE},
 	[TOKEN_ELSE] = {NULL, NULL, PREC_NONE},
 	[TOKEN_QUESTION] = {NULL, _conditional, PREC_CONDITIONAL},
-	//	[TOKEN_COLON] = {NULL, NULL, PREC_NONE},
+	[TOKEN_COLON] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LET] = {NULL, NULL, PREC_NONE},
@@ -1208,7 +1215,11 @@ ObjFunction* compCompile(const char* SOURCE) {
 	}
 
 	ObjFunction* func = _end();
-	return parser.hadError ? NULL : func;
+	if( parser.hadError ) {
+		return NULL;
+	}
+
+	return func;
 }
 
 static void _errorAt(Token* token, const char* MSG) {

@@ -10,12 +10,14 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "compiler.h"
 #include "debug.h"
 #include "error.h"
 #include "memory.h"
+#include "native.h"
 #include "object.h"
 #include "opcodes.h"
 #include "value.h"
@@ -145,6 +147,18 @@ static void _concatenate(void) {
 }
 
 static void _runtimeError(void) {
+	if( vm.stackTop > &vm.stack[vm.stackMax] ) {
+		fprintf(stderr, COLOR_RED "\nSTACK OVERFLOW!" COLOR_RESET
+								  "Variaveis de mais. Funcao recursiva?");
+		_resetStack();
+		return;
+	}
+
+	if( vm.frameCount - 2 <= 0 ) {
+		_resetStack();
+		return;
+	}
+
 	fprintf(stderr, COLOR_YELLOW "\nStack trace " COLOR_RESET
 								 "(ultima chamada primeiro):");
 
@@ -176,7 +190,7 @@ static bool _call(ObjFunction *function, const uint8_t ARG_COUNT) {
 	}
 
 	if( vm.frameCount == FRAMES_MAX ) {
-		RUNTIME_ERROR_F("Overflow da pilha");
+		RUNTIME_ERROR_F("Overflow da pilha (recursao profunda demais?)");
 		return false;
 	}
 
@@ -192,6 +206,8 @@ static bool _callValue(Value callee, const uint8_t ARG_COUNT) {
 		switch( OBJECT_TYPE(callee) ) {
 			case OBJ_FUNCTION:
 				return _call(AS_FUNCTION(callee), ARG_COUNT);
+			case OBJ_NATIVE:
+				return nativeCall(AS_NATIVE_FN(callee), ARG_COUNT);
 			default:
 				break;	// Objeto inchamável
 		}
@@ -209,6 +225,11 @@ void vmInitStack(void) {
 	_resetStack();
 }
 
+static void _vmTempInitStack(void) {
+	vm.stack = memRealloc(vm.stack, 0, 32);
+	_resetStack();
+}
+
 void vmInit(void) {
 	vm.objects = NULL;
 	vm.stackMax = 0;
@@ -218,7 +239,8 @@ void vmInit(void) {
 
 	tableInit(&vm.strings);
 
-	_resetStack();
+	_vmTempInitStack();
+	nativeInit();
 }
 
 void vmFree(void) {
@@ -322,8 +344,7 @@ static Result _run(void) {
 			case OP_GET_GLOBAL_16: {
 				Value value = READ_GLOBAL_16();
 				if( IS_EMPTY(value) ) {
-					RUNTIME_ERROR("Variavel indefinida '%s'.",
-								  AS_STRING(value)->str);
+					RUNTIME_ERROR("Variavel indefinida");
 					return RESULT_RUNTIME_ERROR;
 				}
 
@@ -334,8 +355,7 @@ static Result _run(void) {
 			case OP_GET_GLOBAL_32: {
 				Value value = READ_GLOBAL_32();
 				if( IS_EMPTY(value) ) {
-					RUNTIME_ERROR("Variavel indefinida '%s'.",
-								  AS_STRING(value)->str);
+					RUNTIME_ERROR("Variavel indefinida");
 					return RESULT_RUNTIME_ERROR;
 				}
 
@@ -494,6 +514,11 @@ static Result _run(void) {
 				const uint8_t ARG_COUNT = READ_8();
 				frame->fp = fp;
 
+				if( vm.stackTop + ARG_COUNT > &vm.stack[vm.stackMax] ) {
+					RUNTIME_ERROR("Overflow da pilha");
+					return RESULT_RUNTIME_ERROR;
+				}
+
 				if( !_callValue(_peek(ARG_COUNT), ARG_COUNT) ) {
 					return RESULT_RUNTIME_ERROR;
 				}
@@ -529,6 +554,7 @@ static Result _run(void) {
 
 Result vmInterpret(const char *SOURCE) {
 	ObjFunction *function = compCompile(SOURCE);
+
 	if( function == NULL ) {
 		return RESULT_COMPILER_ERROR;
 	}

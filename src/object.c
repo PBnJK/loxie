@@ -63,6 +63,13 @@ ObjFunction *objMakeFunction(void) {
 	return function;
 }
 
+ObjNative *objMakeNative(NativeFn function) {
+	ObjNative *native = ALLOC_OBJECT(ObjNative, OBJ_NATIVE);
+	native->function = function;
+
+	return native;
+}
+
 uint32_t hashString(const char *KEY, const size_t LENGTH) {
 	uint32_t hash = 2166136261u;
 	for( size_t i = 0; i < LENGTH; ++i ) {
@@ -94,12 +101,16 @@ ObjString *objCopyString(const char *STR, const size_t LEN) {
 
 void objPrint(const Value VALUE) {
 	switch( OBJECT_TYPE(VALUE) ) {
+		case OBJ_STRING:
+			printf("%s", AS_CSTRING(VALUE));
+			break;
+
 		case OBJ_FUNCTION:
 			_printFunction(AS_FUNCTION(VALUE));
 			break;
 
-		case OBJ_STRING:
-			printf("%s", AS_CSTRING(VALUE));
+		case OBJ_NATIVE:
+			printf("<native fn>");
 			break;
 
 		default:
