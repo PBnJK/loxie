@@ -6,7 +6,7 @@ func fib(n) {
 	retorne fib(n - 2) + fib(n - 1);
 }
 
-var start = cronometro();
-imprima fib(99);
+var start = cronometro(1);
+imprima fib(21);
 imprima cronometro() - start;
 

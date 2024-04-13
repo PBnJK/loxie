@@ -53,21 +53,51 @@ ObjString *objMakeString(const size_t LEN) {
 	return string;
 }
 
+ObjUpvalue *objMakeUpvalue(Value *slot) {
+	ObjUpvalue *upvalue = ALLOC_OBJECT(ObjUpvalue, OBJ_UPVALUE);
+
+	upvalue->location = slot;
+	upvalue->closed = CREATE_NIL();
+	upvalue->next = NULL;
+
+	return upvalue;
+}
+
 ObjFunction *objMakeFunction(void) {
 	ObjFunction *function = ALLOC_OBJECT(ObjFunction, OBJ_FUNCTION);
 
 	function->arity = 0;
+	function->upvalueSize = 0;
+	function->upvalueCount = 0;
 	function->name = NULL;
 	chunkInit(&function->chunk);
 
 	return function;
 }
 
-ObjNative *objMakeNative(NativeFn function) {
+ObjNative *objMakeNative(NativeFn function, const uint16_t ARGS) {
 	ObjNative *native = ALLOC_OBJECT(ObjNative, OBJ_NATIVE);
 	native->function = function;
+	native->argCount = ARGS;
 
 	return native;
+}
+
+ObjClosure *objMakeClosure(ObjFunction *function) {
+	ObjUpvalue **upvalues = MEM_ALLOC(ObjUpvalue *, function->upvalueCount);
+
+	for( size_t i = 0; i < function->upvalueCount; ++i ) {
+		upvalues[i] = NULL;
+	}
+
+	ObjClosure *closure = ALLOC_OBJECT(ObjClosure, OBJ_CLOSURE);
+	closure->function = function;
+
+	closure->upvalues = upvalues;
+	closure->upvalueCount = function->upvalueCount;
+	closure->upvalueSize = function->upvalueSize;
+
+	return closure;
 }
 
 uint32_t hashString(const char *KEY, const size_t LENGTH) {
@@ -105,12 +135,20 @@ void objPrint(const Value VALUE) {
 			printf("%s", AS_CSTRING(VALUE));
 			break;
 
+		case OBJ_UPVALUE:
+			printf("upvalue");
+			break;
+
 		case OBJ_FUNCTION:
 			_printFunction(AS_FUNCTION(VALUE));
 			break;
 
 		case OBJ_NATIVE:
 			printf("<native fn>");
+			break;
+
+		case OBJ_CLOSURE:
+			_printFunction(AS_CLOSURE_FN(VALUE));
 			break;
 
 		default:

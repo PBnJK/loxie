@@ -13,6 +13,7 @@
 #include "object.h"
 #include "value.h"
 
+/** Erro retornado por uma função nativa */
 #define ERROR_TYPE (CREATE_EMPTY())
 
 /**
@@ -30,8 +31,9 @@ bool nativeCall(NativeFn native, const uint8_t ARG_COUNT);
  *
  * @param[in] native Função sendo definida
  * @param[in] NAME O nome da função
+ * @param[in] ARGS Quantidade de argumentos
  */
-void nativeDefine(NativeFn native, const char *NAME);
+void nativeDefine(NativeFn native, const char *NAME, const int16_t ARGS);
 
 /**
  * @brief Define as funções nativas

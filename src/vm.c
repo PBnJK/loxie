@@ -40,12 +40,14 @@
 /**
  * @brief Lê uma constante
  */
-#define READ_CONST_16() (frame->function->chunk.consts.values[READ_8()])
+#define READ_CONST_16() \
+	(frame->closure->function->chunk.consts.values[READ_8()])
 
 /**
  * @brief Lê uma constante longa
  */
-#define READ_CONST_32() (frame->function->chunk.consts.values[READ_24()])
+#define READ_CONST_32() \
+	(frame->closure->function->chunk.consts.values[READ_24()])
 
 /**
  * @brief Lê uma global
@@ -111,6 +113,7 @@ VM vm = {0}; /**< Instância global da máquina virtual */
 static void _resetStack(void) {
 	vm.stackTop = vm.stack;
 	vm.frameCount = 0;
+	vm.openUpvalues = NULL;
 }
 
 /**
@@ -164,7 +167,7 @@ static void _runtimeError(void) {
 
 	for( int16_t i = vm.frameCount - 2; i >= 0; --i ) {
 		CallFrame *frame = &vm.frames[i];
-		ObjFunction *function = frame->function;
+		ObjFunction *function = frame->closure->function;
 		const size_t INSTR = frame->fp - function->chunk.code - 1;
 		const size_t LINE = chunkGetLine(&function->chunk, INSTR);
 
@@ -180,12 +183,12 @@ static void _runtimeError(void) {
 	_resetStack();
 }
 
-static bool _call(ObjFunction *function, const uint8_t ARG_COUNT) {
+static bool _call(ObjClosure *closure, const uint8_t ARG_COUNT) {
 	CallFrame *frame = &vm.frames[vm.frameCount++];
 
-	if( ARG_COUNT != function->arity ) {
+	if( ARG_COUNT != closure->function->arity ) {
 		RUNTIME_ERROR_F("Esperava %d argumentos mas recebeu %d",
-						function->arity, ARG_COUNT);
+						closure->function->arity, ARG_COUNT);
 		return false;
 	}
 
@@ -194,8 +197,8 @@ static bool _call(ObjFunction *function, const uint8_t ARG_COUNT) {
 		return false;
 	}
 
-	frame->function = function;
-	frame->fp = function->chunk.code;
+	frame->closure = closure;
+	frame->fp = closure->function->chunk.code;
 	frame->slots = vm.stackTop - ARG_COUNT - 1;
 
 	return true;
@@ -204,10 +207,20 @@ static bool _call(ObjFunction *function, const uint8_t ARG_COUNT) {
 static bool _callValue(Value callee, const uint8_t ARG_COUNT) {
 	if( IS_OBJECT(callee) ) {
 		switch( OBJECT_TYPE(callee) ) {
-			case OBJ_FUNCTION:
-				return _call(AS_FUNCTION(callee), ARG_COUNT);
-			case OBJ_NATIVE:
+			case OBJ_CLOSURE:
+				return _call(AS_CLOSURE(callee), ARG_COUNT);
+
+			case OBJ_NATIVE: {
+				ObjNative *n = AS_NATIVE(callee);
+				if( n->argCount != ARG_COUNT && n->argCount != -1 ) {
+					RUNTIME_ERROR_F("Esperava %d argumentos, mas recebeu %u",
+									n->argCount, ARG_COUNT);
+					return false;
+				}
+
 				return nativeCall(AS_NATIVE_FN(callee), ARG_COUNT);
+			}
+
 			default:
 				break;	// Objeto inchamável
 		}
@@ -216,6 +229,41 @@ static bool _callValue(Value callee, const uint8_t ARG_COUNT) {
 	RUNTIME_ERROR_F("So e possivel chamar funcoes e classes");
 
 	return false;
+}
+
+static ObjUpvalue *_captureUpvalue(Value *local) {
+	ObjUpvalue *prevUpvalue = NULL;
+	ObjUpvalue *upvalue = vm.openUpvalues;
+
+	while( upvalue != NULL && upvalue->location > local ) {
+		prevUpvalue = upvalue;
+		upvalue = upvalue->next;
+	}
+
+	if( upvalue != NULL && upvalue->location == local ) {
+		return upvalue;
+	}
+
+	ObjUpvalue *createdUpvalue = objMakeUpvalue(local);
+	createdUpvalue->next = upvalue;
+
+	if( prevUpvalue == NULL ) {
+		vm.openUpvalues = createdUpvalue;
+	} else {
+		prevUpvalue->next = createdUpvalue;
+	}
+
+	return createdUpvalue;
+}
+
+static void _closeUpvalues(Value *last) {
+	while( vm.openUpvalues != NULL && vm.openUpvalues->location >= last ) {
+		ObjUpvalue *upvalue = vm.openUpvalues;
+		upvalue->closed = *upvalue->location;
+		upvalue->location = &upvalue->closed;
+
+		vm.openUpvalues = upvalue->next;
+	}
 }
 
 void vmInitStack(void) {
@@ -263,9 +311,9 @@ Value vmPop(void) {
 
 size_t vmGetLine(const uint8_t FRAME_IDX) {
 	CallFrame *frame = &vm.frames[FRAME_IDX];
-	const size_t OFFSET = frame->fp - frame->function->chunk.code - 1;
+	const size_t OFFSET = frame->fp - frame->closure->function->chunk.code - 1;
 
-	return chunkGetLine(&frame->function->chunk, OFFSET);
+	return chunkGetLine(&frame->closure->function->chunk, OFFSET);
 }
 
 #ifdef DEBUG_TRACE_EXECUTION
@@ -290,8 +338,9 @@ static Result _run(void) {
 	while( true ) {
 #ifdef DEBUG_TRACE_EXECUTION
 		_printStack();
-		debugDisassembleInstruction(&frame->function->chunk,
-									(size_t)(fp - frame->function->chunk.code));
+		debugDisassembleInstruction(
+			&frame->closure->function->chunk,
+			(size_t)(fp - frame->closure->function->chunk.code));
 #endif
 		const uint8_t OP = READ_8();
 		switch( OP ) {
@@ -359,19 +408,25 @@ static Result _run(void) {
 					return RESULT_RUNTIME_ERROR;
 				}
 
-				case OP_GET_LOCAL_16: {
-					uint8_t slot = READ_8();
-					vmPush(frame->slots[slot]);
-				} break;
-
-				case OP_GET_LOCAL_32: {
-					uint8_t slot = READ_24();
-					vmPush(frame->slots[slot]);
-				} break;
-
-					vmPush(value);
-					break;
+				vmPush(value);
+				break;
 			}
+
+			case OP_GET_LOCAL_16:
+				vmPush(frame->slots[READ_8()]);
+				break;
+
+			case OP_GET_LOCAL_32:
+				vmPush(frame->slots[READ_24()]);
+				break;
+
+			case OP_GET_UPVALUE_16:
+				vmPush(*frame->closure->upvalues[READ_8()]->location);
+				break;
+
+			case OP_GET_UPVALUE_32:
+				vmPush(*frame->closure->upvalues[READ_24()]->location);
+				break;
 
 			case OP_SET_GLOBAL_16: {
 				uint8_t index = READ_8();
@@ -401,15 +456,21 @@ static Result _run(void) {
 				vm.globalValues.values[index] = _peek(0);
 			} break;
 
-			case OP_SET_LOCAL_16: {
-				uint8_t slot = READ_8();
-				vm.stack[slot] = _peek(0);
-			} break;
+			case OP_SET_LOCAL_16:
+				vm.stack[READ_8()] = _peek(0);
+				break;
 
-			case OP_SET_LOCAL_32: {
-				uint8_t slot = READ_24();
-				vm.stack[slot] = _peek(0);
-			} break;
+			case OP_SET_LOCAL_32:
+				vm.stack[READ_24()] = _peek(0);
+				break;
+
+			case OP_SET_UPVALUE_16:
+				*frame->closure->upvalues[READ_8()]->location = _peek(0);
+				break;
+
+			case OP_SET_UPVALUE_32:
+				*frame->closure->upvalues[READ_24()]->location = _peek(0);
+				break;
 
 			case OP_EQUAL: {
 				Value a = vmPop();
@@ -443,7 +504,8 @@ static Result _run(void) {
 					vmPush(CREATE_NUMBER(A + B));
 				} else {
 					RUNTIME_ERROR(
-						"Operandos devem ser dois numeros ou duas strings");
+						"Operandos devem ser dois numeros ou duas "
+						"strings");
 					return RESULT_RUNTIME_ERROR;
 				}
 			} break;
@@ -527,10 +589,50 @@ static Result _run(void) {
 				fp = frame->fp;
 			} break;
 
+			case OP_CLOSURE_16: {
+				ObjFunction *function = AS_FUNCTION(READ_CONST_16());
+				ObjClosure *closure = objMakeClosure(function);
+				vmPush(CREATE_OBJECT(closure));
+
+				for( int16_t i = 0; i < closure->upvalueCount; ++i ) {
+					uint8_t isLocal = READ_8();
+					uint32_t index = READ_24();
+					if( isLocal ) {
+						closure->upvalues[i] =
+							_captureUpvalue(frame->slots + index);
+					} else {
+						closure->upvalues[i] = frame->closure->upvalues[index];
+					}
+				}
+			} break;
+
+			case OP_CLOSURE_32: {
+				ObjFunction *function = AS_FUNCTION(READ_CONST_32());
+				ObjClosure *closure = objMakeClosure(function);
+				vmPush(CREATE_OBJECT(closure));
+
+				for( int16_t i = 0; i < closure->upvalueCount; ++i ) {
+					uint8_t isLocal = READ_8();
+					uint32_t index = READ_24();
+					if( isLocal ) {
+						closure->upvalues[i] =
+							_captureUpvalue(frame->slots + index);
+					} else {
+						closure->upvalues[i] = frame->closure->upvalues[index];
+					}
+				}
+			} break;
+
+			case OP_CLOSE_UPVALUE:
+				_closeUpvalues(vm.stackTop - 1);
+				vmPop();
+				break;
+
 			case OP_RETURN: {
 				Value result = vmPop();
 				frame->fp = fp;
 
+				_closeUpvalues(frame->slots);
 				--vm.frameCount;
 				if( vm.frameCount == 0 ) {
 					vmPop();
@@ -545,8 +647,9 @@ static Result _run(void) {
 			} break;
 
 			default:
-				errWarn(chunkGetLine(&frame->function->chunk, *(fp - 1)),
-						"OPCODE desconhecido encontrado! -> ");
+				errWarn(
+					chunkGetLine(&frame->closure->function->chunk, *(fp - 1)),
+					"OPCODE desconhecido encontrado! -> ");
 				printf("%02x\n", OP);
 		}
 	}
@@ -560,7 +663,10 @@ Result vmInterpret(const char *SOURCE) {
 	}
 
 	vmPush(CREATE_OBJECT(function));
-	_call(function, 0);
+	ObjClosure *closure = objMakeClosure(function);
+	vmPop();
+	vmPush(CREATE_OBJECT(closure));
+	_call(closure, 0);
 
 	return _run();
 }

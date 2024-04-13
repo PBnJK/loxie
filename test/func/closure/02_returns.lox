@@ -1,0 +1,12 @@
+func makeClosure() {
+	var local = "local";
+
+	func closure() {
+		imprima local;
+	}
+
+	retorne closure;
+}
+
+var closure = makeClosure();
+closure();

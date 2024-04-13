@@ -18,8 +18,13 @@ static Value _nativeClock(const uint8_t ARG_COUNT, Value *args) {
 	return CREATE_NUMBER((LOXIE_NUMBER)clock() / CLOCKS_PER_SEC);
 }
 
+static Value _nativeType(const uint8_t ARG_COUNT, Value *args) {
+	return CREATE_NUMBER((LOXIE_NUMBER)clock() / CLOCKS_PER_SEC);
+}
+
 void nativeInit(void) {
-	nativeDefine(_nativeClock, "cronometro");
+	nativeDefine(_nativeClock, "cronometro", 0);
+	nativeDefine(_nativeType, "tipo", 1);
 }
 
 bool nativeCall(NativeFn native, const uint8_t ARG_COUNT) {
@@ -30,9 +35,9 @@ bool nativeCall(NativeFn native, const uint8_t ARG_COUNT) {
 	return GET_TYPE(result) != VALUE_EMPTY;
 }
 
-void nativeDefine(NativeFn native, const char *NAME) {
+void nativeDefine(NativeFn native, const char *NAME, const int16_t ARGS) {
 	vmPush(CREATE_OBJECT(objCopyString(NAME, (size_t)strlen(NAME))));
-	vmPush(CREATE_OBJECT(objMakeNative(native)));
+	vmPush(CREATE_OBJECT(objMakeNative(native, ARGS)));
 
 	const Value INDEX = CREATE_NUMBER((double)vm.globalValues.count);
 

@@ -1,7 +1,5 @@
-var x = "global";
 func outer() {
-	var x = "outer";
-
+	var x = "outside";
 	func inner() {
 		imprima x;
 	}

@@ -21,15 +21,26 @@ static void _freeObject(Obj *object) {
 			obj = memRealloc(obj, sizeof(ObjString) + obj->length + 1, 0);
 		} break;
 
+		case OBJ_UPVALUE:
+			MEM_FREE(ObjClosure, object);
+			break;
+
 		case OBJ_FUNCTION: {
-			ObjFunction *obj = (ObjFunction *)object;
-			chunkFree(&obj->chunk);
-			MEM_FREE(ObjFunction, obj);
+			ObjFunction *function = (ObjFunction *)object;
+			chunkFree(&function->chunk);
+			MEM_FREE(ObjFunction, object);
 		} break;
 
 		case OBJ_NATIVE:
 			MEM_FREE(ObjNative, object);
 			break;
+
+		case OBJ_CLOSURE: {
+			ObjClosure *closure = (ObjClosure *)object;
+			MEM_FREE_ARRAY(ObjUpvalue *, closure->upvalues,
+						   closure->upvalueCount);
+			MEM_FREE(ObjClosure, object);
+		} break;
 
 		default:
 			errFatal(vmGetLine(0),

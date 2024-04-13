@@ -32,41 +32,49 @@ typedef enum {
 
 	OP_GET_GLOBAL_16 = 10, /**< Pega uma variável global, con índice 8-bit */
 	OP_GET_GLOBAL_32 = 11, /**< Pega uma variável global, com índice 24-bit */
-	OP_GET_LOCAL_16 = 12,  /**< Pega uma variável global, con índice 8-bit */
-	OP_GET_LOCAL_32 = 13,  /**< Pega uma variável global, con índice 8-bit */
+	OP_GET_LOCAL_16 = 12,  /**< Pega uma variável local, com índice 8-bit */
+	OP_GET_LOCAL_32 = 13,  /**< Pega uma variável local, com índice 24-bit */
+	OP_GET_UPVALUE_16 = 14, /**< Pega uma local capturada, com índice 8-bit */
+	OP_GET_UPVALUE_32 = 15, /**< Pega uma local capturada, com índice 24-bit */
 
-	OP_SET_GLOBAL_16 = 14, /**< Pega uma variável global, con índice 8-bit */
-	OP_SET_GLOBAL_32 = 15, /**< Pega uma variável global, com índice 24-bit */
-	OP_SET_LOCAL_16 = 16,  /**< Pega uma variável global, com índice 24-bit */
-	OP_SET_LOCAL_32 = 17,  /**< Pega uma variável global, com índice 24-bit */
+	OP_SET_GLOBAL_16 = 16, /**< Muda uma variável global, con índice 8-bit */
+	OP_SET_GLOBAL_32 = 17, /**< Muda uma variável global, com índice 24-bit */
+	OP_SET_LOCAL_16 = 18,  /**< Muda uma variável local, com índice 8-bit */
+	OP_SET_LOCAL_32 = 19,  /**< Muda uma variável local, com índice 24-bit */
+	OP_SET_UPVALUE_16 = 20, /**< Muda uma local capturada, com índice 8-bit */
+	OP_SET_UPVALUE_32 = 21, /**< Muda uma local capturada, com índice 24-bit */
 
-	OP_EQUAL = 18,		   /**< Igual a */
-	OP_GREATER = 19,	   /**< Maior que */
-	OP_GREATER_EQUAL = 20, /**< Maior ou igual a */
-	OP_LESS = 21,		   /**< Menor que */
-	OP_LESS_EQUAL = 22,	   /**< Menor ou igual a */
+	OP_EQUAL = 22,		   /**< Igual a */
+	OP_GREATER = 23,	   /**< Maior que */
+	OP_GREATER_EQUAL = 24, /**< Maior ou igual a */
+	OP_LESS = 25,		   /**< Menor que */
+	OP_LESS_EQUAL = 26,	   /**< Menor ou igual a */
 
-	OP_ADD = 23, /**< Adiciona dois operandos */
-	OP_SUB = 24, /**< Subtrai dois operandos */
-	OP_MUL = 25, /**< Multiplica dois operandos */
-	OP_DIV = 26, /**< Divide dois operandos */
-	OP_MOD = 27, /**< Módulo de dois operandos (resto da divisão) */
+	OP_ADD = 27, /**< Adiciona dois operandos */
+	OP_SUB = 28, /**< Subtrai dois operandos */
+	OP_MUL = 29, /**< Multiplica dois operandos */
+	OP_DIV = 30, /**< Divide dois operandos */
+	OP_MOD = 31, /**< Módulo de dois operandos (resto da divisão) */
 
-	OP_NEGATE = 28, /**< Inverte o sinal de um número */
-	OP_NOT = 29,	/**< Oposto de um booleano */
+	OP_NEGATE = 32, /**< Inverte o sinal de um número */
+	OP_NOT = 33,	/**< Oposto de um booleano */
 
-	OP_PRINT = 30, /**< Imprimir */
+	OP_PRINT = 34, /**< Imprimir */
 
-	OP_JUMP = 31,		   /**< Pulo */
-	OP_JUMP_IF_FALSE = 32, /**< Pulo condicional */
+	OP_JUMP = 35,		   /**< Pulo */
+	OP_JUMP_IF_FALSE = 36, /**< Pulo condicional */
 
-	OP_LOOP = 33,  /**< Inicia um loop */
-	OP_BREAK = 34, /**< Sai de um loop */
+	OP_LOOP = 37,  /**< Inicia um loop */
+	OP_BREAK = 38, /**< Sai de um loop */
 
-	OP_DUP = 35,  /**< Duplica o item no topo da pilha */
-	OP_CALL = 36, /**< Chama uma função */
+	OP_DUP = 39, /**< Duplica o item no topo da pilha */
 
-	OP_RETURN = 37, /**< Retorna de uma função */
+	OP_CALL = 40,		   /**< Chama uma função */
+	OP_CLOSURE_16 = 41,	   /**< Cria uma closure, com um índice 8-bit */
+	OP_CLOSURE_32 = 42,	   /**< Cria uma closure, com um índice 24-bit */
+	OP_CLOSE_UPVALUE = 43, /**< Fecha um upvalue */
+
+	OP_RETURN = 44, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_LOXIE_OPCODES_H

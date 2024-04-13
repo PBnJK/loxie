@@ -39,9 +39,9 @@ typedef enum {
  * @endcode
  */
 typedef struct CallFrame {
-	ObjFunction *function; /**< Função a qual pertence este CallFrame */
-	uint8_t *fp;		   /**< Frame pointer */
-	Value *slots;		   /**< Variáveis neste CallFrame */
+	ObjClosure *closure; /**< Função a qual pertence este CallFrame */
+	uint8_t *fp;		 /**< Frame pointer */
+	Value *slots;		 /**< Variáveis neste CallFrame */
 } CallFrame;
 
 /**
@@ -58,8 +58,9 @@ typedef struct VM {
 	Table globalNames;		 /**< Hashmap com os nomes das variáveis globais */
 	ValueArray globalValues; /**< Array com os valores das variáveis globais */
 
-	Table strings; /**< Hashmap de strings */
-	Obj *objects;  /**< Lista de objetos */
+	Table strings;			  /**< Hashmap de strings */
+	ObjUpvalue *openUpvalues; /**< Lista de upvalues abertos */
+	Obj *objects;			  /**< Lista de objetos */
 } VM;
 
 extern VM vm; /**< Instância global da VM, para acesso externo */
@@ -81,6 +82,8 @@ void vmFree(void);
 
 /**
  * @brief Retorna a linha em que a VM está atualmente
+ *
+ * @param[in] FRAME_IDX Índice pro frame onde o código atual está
  * @return A linha atual
  */
 size_t vmGetLine(const uint8_t FRAME_IDX);

@@ -32,9 +32,18 @@
  * @brief Struct representando uma variável local
  */
 typedef struct Local {
-	Token name;	   /**< Token representando a variável */
-	int16_t depth; /**< Escopo da variável */
+	Token name;		 /**< Token representando a variável */
+	int16_t depth;	 /**< Escopo da variável */
+	bool isCaptured; /**< Se esta variável foi capturada */
 } Local;
+
+/**
+ * @brief Struct representando uma variável local capturada
+ */
+typedef struct Upvalue {
+	ssize_t index; /**< Índice do upvalue no array de upvalues */
+	bool isLocal;  /**< Se a variável sendo capturada é local */
+} Upvalue;
 
 /**
  * @brief Enum representando os tipos de função existentes
@@ -53,9 +62,14 @@ typedef struct Compiler {
 	ObjFunction* function; /**< Função sendo compilada */
 	FunctionType type;	   /**< Tipo de função sendo compilada */
 
-	Local locals[UINT8_COUNT]; /**< Array com variáveis locais */
-	int16_t localCount;		   /**< Quantidade de variáveis locais */
-	int16_t scope;			   /**< Escopo das variáveis */
+	Local* locals;		/**< Array com variáveis locais */
+	int32_t localSize;	/**< Tamanho do array de variáveis locais */
+	int32_t localCount; /**< Quantidade de variáveis locais */
+
+	Upvalue* upvalues;	/**< Upvalues */
+	size_t upvalueSize; /**< Tamanho do array de upvalues */
+
+	int16_t scope; /**< Escopo das variáveis */
 } Compiler;
 
 uint16_t stackMax = 0;		 /**< Máximo de valores que estarão na pilha */
@@ -299,7 +313,13 @@ static void _initCompiler(Compiler* compiler, const FunctionType TYPE) {
 	compiler->function = NULL;
 	compiler->type = TYPE;
 
+	compiler->locals = malloc(sizeof(Local) * 16);
 	compiler->localCount = 0;
+	compiler->localSize = 16;
+
+	compiler->upvalues = malloc(sizeof(Upvalue) * 16);
+	compiler->upvalueSize = 16;
+
 	compiler->scope = 0;
 
 	compiler->function = objMakeFunction();
@@ -315,6 +335,7 @@ static void _initCompiler(Compiler* compiler, const FunctionType TYPE) {
 	 */
 	Local* local = &current->locals[current->localCount++];
 	local->depth = 0;
+	local->isCaptured = false;
 	local->name.START = "";
 	local->name.length = 0;
 	local->name.type = TOKEN_NIL;
@@ -329,7 +350,11 @@ static void _endScope(void) {
 
 	while( current->localCount > 0 &&
 		   current->locals[current->localCount - 1].depth > current->scope ) {
-		_emitPop();
+		if( current->locals[current->localCount - 1].isCaptured ) {
+			_emitByte(OP_CLOSE_UPVALUE);
+		} else {
+			_emitPop();
+		}
 		--current->localCount;
 	}
 }
@@ -404,8 +429,31 @@ static bool _identifiersEqual(Token* a, Token* b) {
 	return memcmp(a->START, b->START, a->length) == 0;
 }
 
-static int16_t _resolveLocal(Compiler* compiler, Token* name) {
-	for( int16_t i = compiler->localCount - 1; i >= 0; --i ) {
+static void _markInitialized() {
+	if( current->scope == 0 ) {
+		return;
+	}
+
+	current->locals[current->localCount - 1].depth = current->scope;
+}
+
+static void _addLocal(Token name) {
+	if( current->localSize < current->localCount + 1 ) {
+		const size_t OLD_SIZE = current->localSize;
+		current->localSize = MEM_GROW_SIZE(OLD_SIZE);
+
+		current->locals = MEM_GROW_ARRAY(Local, current->locals, OLD_SIZE,
+										 current->localSize);
+	}
+
+	Local* local = &current->locals[current->localCount++];
+	local->name = name;
+	local->depth = -1;
+	local->isCaptured = false;
+}
+
+static ssize_t _resolveLocal(Compiler* compiler, Token* name) {
+	for( ssize_t i = compiler->localCount - 1; i >= 0; --i ) {
 		Local* local = &compiler->locals[i];
 		if( _identifiersEqual(name, &local->name) ) {
 			if( local->depth == -1 ) {
@@ -419,23 +467,47 @@ static int16_t _resolveLocal(Compiler* compiler, Token* name) {
 	return -1;
 }
 
-static void _markInitialized() {
-	if( current->scope == 0 ) {
-		return;
+static ssize_t _addUpvalue(Compiler* compiler, ssize_t index, bool isLocal) {
+	size_t upvalueCount = compiler->function->upvalueCount;
+
+	for( size_t i = 0; i < upvalueCount; ++i ) {
+		Upvalue* upvalue = &compiler->upvalues[i];
+		if( upvalue->index == index && upvalue->isLocal == isLocal ) {
+			return i;
+		}
 	}
 
-	current->locals[current->localCount - 1].depth = current->scope;
+	if( compiler->upvalueSize < upvalueCount + 1 ) {
+		const size_t OLD_SIZE = compiler->upvalueSize;
+		compiler->upvalueSize = MEM_GROW_SIZE(OLD_SIZE);
+
+		compiler->upvalues = MEM_GROW_ARRAY(Upvalue, compiler->upvalues,
+											OLD_SIZE, compiler->upvalueSize);
+		return 0;
+	}
+
+	compiler->upvalues[upvalueCount].isLocal = isLocal;
+	compiler->upvalues[upvalueCount].index = index;
+	return compiler->function->upvalueCount++;
 }
 
-static void _addLocal(Token name) {
-	if( current->localCount == UINT8_COUNT ) {
-		_errorAtPrev("Variáveis locais de mais na função.");
-		return;
+static ssize_t _resolveUpvalue(Compiler* compiler, Token* name) {
+	if( compiler->enclosing == NULL ) {
+		return -1;
 	}
 
-	Local* local = &current->locals[current->localCount++];
-	local->name = name;
-	local->depth = -1;
+	ssize_t local = _resolveLocal(compiler->enclosing, name);
+	if( local != -1 ) {
+		compiler->enclosing->locals[local].isCaptured = true;
+		return _addUpvalue(compiler, local, true);
+	}
+
+	ssize_t upvalue = _resolveUpvalue(compiler->enclosing, name);
+	if( upvalue != -1 ) {
+		return _addUpvalue(compiler, upvalue, false);
+	}
+
+	return -1;
 }
 
 static void _declareVariable(void) {
@@ -536,8 +608,17 @@ static void _function(const FunctionType TYPE) {
 	_block();
 
 	ObjFunction* function = _end();
-	_emitConstantWithOp(OP_CONST_16, OP_CONST_32,
+	_emitConstantWithOp(OP_CLOSURE_16, OP_CLOSURE_32,
 						_makeConstant(CREATE_OBJECT(function)));
+
+	for( size_t i = 0; i < function->upvalueCount; ++i ) {
+		Upvalue upvalue = compiler.upvalues[i];
+
+		_emitByte(upvalue.isLocal ? 1 : 0);
+		_emitByte((uint8_t)(upvalue.index & 0xFF));
+		_emitByte((uint8_t)((upvalue.index >> 8) & 0xFF));
+		_emitByte((uint8_t)((upvalue.index >> 16) & 0xFF));
+	}
 }
 
 static void _varDeclaration(void) {
@@ -971,6 +1052,9 @@ static void _namedVariable(Token name, const bool CAN_ASSIGN) {
 	if( arg != -1 ) {
 		getOp = OP_GET_LOCAL_16;
 		setOp = OP_SET_LOCAL_16;
+	} else if( (arg = _resolveUpvalue(current, &name)) != -1 ) {
+		getOp = OP_GET_UPVALUE_16;
+		setOp = OP_SET_UPVALUE_16;
 	} else {
 		arg = _identifierConstant(&name);
 		getOp = OP_GET_GLOBAL_16;
