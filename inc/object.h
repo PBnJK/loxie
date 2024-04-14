@@ -11,17 +11,21 @@
 
 #include "chunk.h"
 #include "common.h"
+#include "table.h"
 #include "value.h"
 
 /**
  * @brief Enum representando todos os tipos de objetos que existem
  */
 typedef enum {
-	OBJ_STRING = 0,	  /**< Objeto tipo string */
-	OBJ_UPVALUE = 1,  /**< Objeto tipo upvalue */
+	OBJ_STRING = 0,	  /**< Objeto representando uma string */
+	OBJ_UPVALUE = 1,  /**< Objeto representando um upvalue */
 	OBJ_FUNCTION = 2, /**< Objeto representando uma função */
 	OBJ_NATIVE = 3,	  /**< Objeto representando uma função nativa */
-	OBJ_CLOSURE = 4	  /**< Objeto representando uma closure */
+	OBJ_CLOSURE = 4,  /**< Objeto representando uma closure */
+	OBJ_CLASS = 5,	  /**< Objeto representando uma classe */
+	OBJ_INSTANCE = 6, /**< Objeto representando uma instância de uma classe */
+	OBJ_BOUND_METHOD = 7, /**< Objeto representando um método capturado */
 } ObjType;
 
 /**
@@ -32,6 +36,7 @@ typedef enum {
  */
 struct Obj {
 	ObjType type;	  /**< O tipo deste objeto */
+	bool isMarked;	  /**< Se este objeto foi marcado pelo GC */
 	struct Obj *next; /**< Próximo objeto (em uma lista linkada de objetos) */
 };
 
@@ -88,9 +93,37 @@ typedef struct ObjClosure {
 	Obj obj;			   /**< Objeto base */
 	ObjFunction *function; /**< Função interna */
 	ObjUpvalue **upvalues; /**< Upvalues */
-	int32_t upvalueCount;  /**< Quantidade de upvalues (redundante, pro GC) */
-	int32_t upvalueSize;   /**< Tamanho do array de upvalues (pro GC) */
+	size_t upvalueCount;   /**< Quantidade de upvalues (redundante, pro GC) */
+	size_t upvalueSize;	   /**< Tamanho do array de upvalues (pro GC) */
 } ObjClosure;
+
+/**
+ * @brief Struct representando uma classe
+ */
+typedef struct ObjClass {
+	Obj obj;		   /**< Objeto base */
+	ObjString *name;   /**< Nome da classe */
+	Value constructor; /**< Método construtor da classe */
+	Table methods;	   /**< Métodos da classe */
+} ObjClass;
+
+/**
+ * @brief Struct representando uma instância de uma classe
+ */
+typedef struct ObjInstance {
+	Obj obj;		 /**< Objeto base */
+	ObjClass *klass; /**< Classe sendo instanciada */
+	Table fields;	 /**< Campos da instância */
+} ObjInstance;
+
+/**
+ * @brief Struct representando uma closure de um método
+ */
+typedef struct ObjBoundMethod {
+	Obj obj;			/**< Objeto base */
+	Value receiver;		/**< Variável que segura este método */
+	ObjClosure *method; /**< Método origem */
+} ObjBoundMethod;
 
 /** Retorna o valor de um objeto */
 #define OBJECT_TYPE(VALUE) (AS_OBJECT(VALUE)->type)
@@ -109,6 +142,15 @@ typedef struct ObjClosure {
 
 /** Verifica se um objeto é uma closure */
 #define IS_CLOSURE(VALUE) _isObjectOfType(VALUE, OBJ_CLOSURE)
+
+/** Verifica se um objeto é uma classe */
+#define IS_CLASS(VALUE) _isObjectOfType(VALUE, OBJ_CLASS)
+
+/** Verifica se um objeto é uma instância de classe */
+#define IS_INSTANCE(VALUE) _isObjectOfType(VALUE, OBJ_INSTANCE)
+
+/** Verifica se um objeto é um método capturado */
+#define IS_BOUND_METHOD(VALUE) _isObjectOfType(VALUE, OBJ_BOUND_METHOD)
 
 /** Trata um objeto como sendo do tipo ObjString */
 #define AS_STRING(VALUE) ((ObjString *)AS_OBJECT(VALUE))
@@ -134,6 +176,15 @@ typedef struct ObjClosure {
 /** Pega a função de um objeto ObjClosure */
 #define AS_CLOSURE_FN(VALUE) (AS_CLOSURE(VALUE)->function)
 
+/** Trata um objeto como sendo do tipo ObjClass */
+#define AS_CLASS(VALUE) ((ObjClass *)AS_OBJECT(VALUE))
+
+/** Trata um objeto como sendo do tipo ObjInstance */
+#define AS_INSTANCE(VALUE) ((ObjInstance *)AS_OBJECT(VALUE))
+
+/** Trata um objeto como sendo do tipo ObjBoundMethod */
+#define AS_BOUND_METHOD(VALUE) ((ObjBoundMethod *)AS_OBJECT(VALUE))
+
 /**
  * @brief Verifica se um objeto é de um dado tipo
  *
@@ -147,7 +198,7 @@ static inline bool _isObjectOfType(const Value VALUE, const ObjType TYPE) {
 }
 
 /**
- * @brief Cria uma string (@ref ObjString)
+ * @brief Cria uma string
  *
  * @param[in] LEN Tamanho da string
  * @return A string criada
@@ -155,7 +206,7 @@ static inline bool _isObjectOfType(const Value VALUE, const ObjType TYPE) {
 ObjString *objMakeString(const size_t LEN);
 
 /**
- * @brief Cria um upvalue (@ref ObjUpvalue)
+ * @brief Cria um upvalue
  *
  * @param[in] slot todo
  * @return O upvalue criado
@@ -163,13 +214,13 @@ ObjString *objMakeString(const size_t LEN);
 ObjUpvalue *objMakeUpvalue(Value *slot);
 
 /**
- * @brief Cria uma função (@ref ObjFunction)
+ * @brief Cria uma função
  * @return A função criada
  */
 ObjFunction *objMakeFunction(void);
 
 /**
- * @brief Cria uma função nativa (@ref ObjNative)
+ * @brief Cria uma função nativa
  *
  * @param[in] function Ponteiro pra função
  * @param[in] ARGS Quantidade de argumentos
@@ -179,12 +230,38 @@ ObjFunction *objMakeFunction(void);
 ObjNative *objMakeNative(NativeFn function, const uint16_t ARGS);
 
 /**
- * @brief Cria uma closure (@ref ObjClosure)
+ * @brief Cria uma closure
  *
  * @param[in] function Função a partir da qual a closure será criada
  * @return A closure criada
  */
 ObjClosure *objMakeClosure(ObjFunction *function);
+
+/**
+ * @brief Cria uma classe
+ *
+ * @param[in] name Nome da função
+ * @return A classe criada
+ */
+ObjClass *objMakeClass(ObjString *name);
+
+/**
+ * @brief Instancia uma classe
+ *
+ * @param[in] klass Classe sendo instanciada
+ * @return Instância criada
+ */
+ObjInstance *objMakeInstance(ObjClass *klass);
+
+/**
+ * @brief Cria um método capturado
+ *
+ * @param[in] receiver Classe sendo instanciada
+ * @param[in] method Classe sendo instanciada
+ *
+ * @return O método capturado
+ */
+ObjBoundMethod *objMakeBoundMethod(Value receiver, ObjClosure *method);
 
 /**
  * @brief Obtém a hash de uma string

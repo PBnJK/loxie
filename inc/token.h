@@ -62,27 +62,31 @@ typedef enum {
 	TOKEN_CONTINUE = 36, /**< 'continue', volta pro inicio do loop
 							  ("pula" um passo) */
 
-	TOKEN_CLASS = 37, /**< 'classe', classe OOP */
-	TOKEN_THIS = 38,  /**< 'isto', referência a própria classe */
-	TOKEN_SUPER = 39, /**< 'super', super-classe */
+	TOKEN_CLASS = 37,	/**< 'classe', classe OOP */
+	TOKEN_THIS = 38,	/**< 'isto', referência a própria classe */
+	TOKEN_SUPER = 39,	/**< 'super', super-classe */
+	TOKEN_EXTENDS = 40, /**< 'extende', extende uma classe */
 
-	TOKEN_FUNC = 40,   /**< 'func', Declaração de função */
-	TOKEN_RETURN = 41, /**< 'retorne', Retorna de uma função */
+	TOKEN_FUNC = 41,   /**< 'func', Declaração de função */
+	TOKEN_RETURN = 42, /**< 'retorne', Retorna de uma função */
 
-	TOKEN_IF = 42,		 /**< 'se', condicional */
-	TOKEN_ELSE = 43,	 /**< 'senao', condicional 'caso contrário' */
-	TOKEN_SWITCH = 44,	 /**< 'escola', condicional múltipla */
-	TOKEN_CASE = 45,	 /**< 'caso', caso em uma condicional múltipla */
-	TOKEN_DEFAULT = 46,	 /**< 'padrao', caso padrao da condicional múltipla */
-	TOKEN_COLON = 47,	 /**< ':', dois pontos */
-	TOKEN_QUESTION = 48, /**< '?', interrogação */
+	TOKEN_IF = 43,		 /**< 'se', condicional */
+	TOKEN_ELSE = 44,	 /**< 'senao', condicional 'caso contrário' */
+	TOKEN_SWITCH = 45,	 /**< 'escola', condicional múltipla */
+	TOKEN_CASE = 46,	 /**< 'caso', caso em uma condicional múltipla */
+	TOKEN_DEFAULT = 47,	 /**< 'padrao', caso padrao da condicional múltipla */
+	TOKEN_COLON = 48,	 /**< ':', dois pontos */
+	TOKEN_QUESTION = 49, /**< '?', interrogação */
 
-	TOKEN_PRINT = 49, /**< 'print', imprime uma variável pra tela */
-	TOKEN_LET = 50,	  /**< 'var', declara uma nova variável */
-	TOKEN_CONST = 51, /**< 'const', declara uma nova constante */
+	TOKEN_PRINT = 50, /**< 'print', imprime uma variável pra tela */
+	TOKEN_LET = 51,	  /**< 'var', declara uma nova variável */
+	TOKEN_CONST = 52, /**< 'const', declara uma nova constante */
 
-	TOKEN_ERROR = 52, /**< 'error', emitido quando um erro é detectado */
-	TOKEN_EOF = 53,	  /**< 'eof', fim do arquivo */
+	TOKEN_ERANGE = 53, /**< '..', range exclusiva */
+	TOKEN_IRANGE = 54, /**< '..=', range inclusiva */
+
+	TOKEN_ERROR = 55, /**< 'error', emitido quando um erro é detectado */
+	TOKEN_EOF = 56,	  /**< 'eof', fim do arquivo */
 } TokenType;
 
 /**

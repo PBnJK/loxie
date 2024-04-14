@@ -94,4 +94,10 @@ bool tableDelete(Table *table, const Value KEY);
  */
 void tableCopyTo(Table *from, Table *to);
 
+/**
+ * @brief Remove os itens não marcados do hashmap;
+ * @param[out] table Ponteiro pro hashmap alvo
+ */
+void tableRemoveWhite(Table *table);
+
 #endif	// GUARD_LOXIE_TABLE_H

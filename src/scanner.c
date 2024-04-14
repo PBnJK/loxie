@@ -148,6 +148,18 @@ static bool _match(const char EXPECTED) {
 	return true;
 }
 
+static Token _matchRange(void) {
+	if( _atEnd() ) {
+		return _errorToken("Range invalida");
+	}
+
+	if( _match('=') ) {
+		return _makeToken(TOKEN_IRANGE);
+	}
+
+	return _makeToken(TOKEN_ERANGE);
+}
+
 /**
  * @brief Pula um comentário de múltiplas linhas estilo C
  */
@@ -257,6 +269,10 @@ Token scanToken(void) {
 		case ',':
 			return _makeToken(TOKEN_COMMA);
 		case '.':
+			if( _match('.') ) {
+				return _matchRange();
+			}
+
 			return _makeToken(TOKEN_DOT);
 		case ';':
 			return _makeToken(TOKEN_SEMICOLON);
@@ -357,6 +373,10 @@ static TokenType _getIdentifierType(void) {
 						return _checkKeyword(2, 6, "quanto", TOKEN_WHILE);
 					case 's':
 						return _checkKeyword(2, 5, "colha", TOKEN_SWITCH);
+					case 'x':
+						return _checkKeyword(2, 5, "tende", TOKEN_EXTENDS);
+					default:
+						return TOKEN_IDENTIFIER;
 				}
 			}
 

@@ -101,6 +101,9 @@ static size_t _32BitOp(const char* NAME, Chunk* chunk, size_t offset);
 static size_t _closureOp(const char* NAME, Chunk* chunk, size_t offset,
 						 bool is24Bit);
 
+static size_t _invoke16Op(const char* NAME, Chunk* chunk, size_t offset);
+static size_t _invoke32Op(const char* NAME, Chunk* chunk, size_t offset);
+
 void debugDisassembleChunk(Chunk* chunk, const char* NAME) {
 	printf("=== %s ===\n", NAME);
 
@@ -212,6 +215,36 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _closureOp("OP_CLOSURE_32", chunk, offset, true);
 		case OP_CLOSE_UPVALUE:
 			return _simpleOp("OP_CLOSE_UPVALUE", offset);
+		case OP_CLASS_16:
+			return _const16Op("OP_CLASS_16", chunk, offset);
+		case OP_CLASS_32:
+			return _const32Op("OP_CLASS_32", chunk, offset);
+		case OP_SET_PROPERTY_16:
+			return _const16Op("OP_SET_PROPERTY_16", chunk, offset);
+		case OP_SET_PROPERTY_32:
+			return _const32Op("OP_SET_PROPERTY_32", chunk, offset);
+		case OP_GET_PROPERTY_16:
+			return _const16Op("OP_GET_PROPERTY_16", chunk, offset);
+		case OP_GET_PROPERTY_32:
+			return _const32Op("OP_GET_PROPERTY_32", chunk, offset);
+		case OP_METHOD_16:
+			return _const16Op("OP_METHOD_16", chunk, offset);
+		case OP_METHOD_32:
+			return _const32Op("OP_METHOD_32", chunk, offset);
+		case OP_INVOKE_16:
+			return _invoke16Op("OP_INVOKE_16", chunk, offset);
+		case OP_INVOKE_32:
+			return _invoke32Op("OP_INVOKE_32", chunk, offset);
+		case OP_INHERIT:
+			return _simpleOp("OP_INHERIT", offset);
+		case OP_GET_SUPER_16:
+			return _const16Op("OP_GET_SUPER_16", chunk, offset);
+		case OP_GET_SUPER_32:
+			return _const32Op("OP_GET_SUPER_32", chunk, offset);
+		case OP_SUPER_INVOKE_16:
+			return _invoke16Op("OP_SUPER_INVOKE_16", chunk, offset);
+		case OP_SUPER_INVOKE_32:
+			return _invoke32Op("OP_SUPER_INVOKE_32", chunk, offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:
@@ -336,4 +369,29 @@ static size_t _closureOp(const char* NAME, Chunk* chunk, size_t offset,
 	}
 
 	return offset;
+}
+
+static size_t _invoke16Op(const char* NAME, Chunk* chunk, size_t offset) {
+	const uint8_t CONSTANT = chunk->code[++offset];
+	const uint8_t ARG_COUNT = chunk->code[++offset];
+
+	printf("%-20s %4d '", NAME, CONSTANT);
+	valuePrint(chunk->consts.values[CONSTANT]);
+	printf("' (%u argumentos)\n", ARG_COUNT);
+
+	return offset + 1;
+}
+
+static size_t _invoke32Op(const char* NAME, Chunk* chunk, size_t offset) {
+	uint8_t constant = chunk->code[++offset];
+	constant |= chunk->code[++offset] << 8;
+	constant |= chunk->code[++offset] << 16;
+
+	const uint8_t ARG_COUNT = chunk->code[++offset];
+
+	printf("%-20s %4d '", NAME, constant);
+	valuePrint(chunk->consts.values[constant]);
+	printf("' (%u argumentos)\n", ARG_COUNT);
+
+	return offset + 1;
 }

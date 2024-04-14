@@ -13,7 +13,9 @@
 #include <string.h>
 
 #include "error.h"
+#include "gc.h"
 #include "memory.h"
+#include "native.h"
 #include "object.h"
 #include "opcodes.h"
 #include "parser.h"
@@ -35,6 +37,7 @@ typedef struct Local {
 	Token name;		 /**< Token representando a variável */
 	int16_t depth;	 /**< Escopo da variável */
 	bool isCaptured; /**< Se esta variável foi capturada */
+	bool isConst;	 /**< Se esta variável é constante */
 } Local;
 
 /**
@@ -43,14 +46,17 @@ typedef struct Local {
 typedef struct Upvalue {
 	ssize_t index; /**< Índice do upvalue no array de upvalues */
 	bool isLocal;  /**< Se a variável sendo capturada é local */
+	bool isConst;  /**< Se esta variável é constante */
 } Upvalue;
 
 /**
  * @brief Enum representando os tipos de função existentes
  */
 typedef enum {
-	TYPE_FUNCTION = 0, /**< Função declarada pelo usuário */
-	TYPE_SCRIPT = 1,   /**< O script em si */
+	TYPE_FUNCTION = 0,	  /**< Função declarada pelo usuário */
+	TYPE_METHOD = 1,	  /**< Método dentro de uma classe */
+	TYPE_CONSTRUCTOR = 2, /**< Construtor da classe */
+	TYPE_SCRIPT = 3,	  /**< O script em si */
 } FunctionType;
 
 /**
@@ -72,12 +78,21 @@ typedef struct Compiler {
 	int16_t scope; /**< Escopo das variáveis */
 } Compiler;
 
+/**
+ * @brief Compila uma classe
+ */
+typedef struct ClassCompiler {
+	struct ClassCompiler* enclosing; /**< Classe superior */
+	bool hasSuperclass; /**< Se esta classe possui uma superclasse */
+} ClassCompiler;
+
 uint16_t stackMax = 0;		 /**< Máximo de valores que estarão na pilha */
 int16_t innerLoopStart = -1; /**< Começo do loop mais interno */
 int16_t innerLoopScope = 0;	 /**< Profundidade do loop mais interno */
 
-Parser parser = {0};	  /**< Instância global do Parser */
-Compiler* current = NULL; /**< Ponteiro pro compilador atual */
+Parser parser = {0};				/**< Instância global do Parser */
+Compiler* current = NULL;			/**< Ponteiro pro compilador atual */
+ClassCompiler* currentClass = NULL; /**< Ponteiro pro compilador de classe */
 
 static Chunk* _chunk() {
 	return &current->function->chunk;
@@ -159,6 +174,7 @@ static void _consume(const TokenType TYPE, const char* MSG) {
 		return;
 	}
 
+	printf("Got %u, expected %u\n", parser.current.type, TYPE);
 	_errorAtCurr(MSG);
 }
 
@@ -210,12 +226,33 @@ static void _emitPop(void) {
 	_emitByte(OP_POP);
 }
 
+static void _emitConstantWithOp(const OpCode TYPE_SHORT, const OpCode TYPE_LONG,
+								const size_t INDEX) {
+	if( INDEX > UINT8_MAX ) {
+		_emitByte(TYPE_LONG);
+		_emitByte((uint8_t)(INDEX & 0xFF));
+		_emitByte((uint8_t)((INDEX >> 8) & 0xFF));
+		_emitByte((uint8_t)((INDEX >> 16) & 0xFF));
+		return;
+	}
+
+	_emitByte(TYPE_SHORT);
+	_emitByte((uint8_t)INDEX);
+}
+
 /**
  * @brief Emite uma instrução de retorno
  */
 static void _emitReturn(void) {
 	_increaseStackMax();
-	_emitBytes(OP_NIL, OP_RETURN);
+
+	if( current->type == TYPE_CONSTRUCTOR ) {
+		_emitConstantWithOp(OP_GET_LOCAL_16, OP_GET_LOCAL_32, 0);
+	} else {
+		_emitByte(OP_NIL);
+	}
+
+	_emitByte(OP_RETURN);
 }
 
 /**
@@ -260,20 +297,6 @@ static size_t _makeConstant(Value value) {
 static void _emitConstant(Value value) {
 	_increaseStackMax();
 	chunkWriteConst(_chunk(), value, parser.previous.line);
-}
-
-static void _emitConstantWithOp(const OpCode TYPE_SHORT, const OpCode TYPE_LONG,
-								const size_t INDEX) {
-	if( INDEX > UINT8_MAX ) {
-		_emitByte(TYPE_LONG);
-		_emitByte((uint8_t)(INDEX & 0xFF));
-		_emitByte((uint8_t)((INDEX >> 8) & 0xFF));
-		_emitByte((uint8_t)((INDEX >> 16) & 0xFF));
-		return;
-	}
-
-	_emitByte(TYPE_SHORT);
-	_emitByte((uint8_t)INDEX);
 }
 
 static void _emitLoop(const int32_t LOOP_START) {
@@ -336,9 +359,17 @@ static void _initCompiler(Compiler* compiler, const FunctionType TYPE) {
 	Local* local = &current->locals[current->localCount++];
 	local->depth = 0;
 	local->isCaptured = false;
-	local->name.START = "";
-	local->name.length = 0;
+	local->isConst = false;
+
 	local->name.type = TOKEN_NIL;
+
+	if( TYPE != TYPE_FUNCTION ) {
+		local->name.START = "isto";
+		local->name.length = 4;
+	} else {
+		local->name.START = "";
+		local->name.length = 0;
+	}
 }
 
 static void _beginScope(void) {
@@ -415,8 +446,10 @@ static size_t _identifierConstant(Token* name) {
 
 	const size_t INDEX = vm.globalValues.count;
 
+	vm.isLocked = true;
 	valueArrayWrite(&vm.globalValues, CREATE_EMPTY());
 	tableSet(&vm.globalNames, string, CREATE_NUMBER((double)INDEX));
+	vm.isLocked = false;
 
 	return INDEX;
 }
@@ -429,12 +462,13 @@ static bool _identifiersEqual(Token* a, Token* b) {
 	return memcmp(a->START, b->START, a->length) == 0;
 }
 
-static void _markInitialized() {
+static void _markInitialized(const bool IS_CONST) {
 	if( current->scope == 0 ) {
 		return;
 	}
 
 	current->locals[current->localCount - 1].depth = current->scope;
+	current->locals[current->localCount - 1].isConst = IS_CONST;
 }
 
 static void _addLocal(Token name) {
@@ -450,6 +484,7 @@ static void _addLocal(Token name) {
 	local->name = name;
 	local->depth = -1;
 	local->isCaptured = false;
+	local->isConst = false;
 }
 
 static ssize_t _resolveLocal(Compiler* compiler, Token* name) {
@@ -467,12 +502,13 @@ static ssize_t _resolveLocal(Compiler* compiler, Token* name) {
 	return -1;
 }
 
-static ssize_t _addUpvalue(Compiler* compiler, ssize_t index, bool isLocal) {
+static ssize_t _addUpvalue(Compiler* compiler, ssize_t index,
+						   const bool IS_LOCAL, const bool IS_CONST) {
 	size_t upvalueCount = compiler->function->upvalueCount;
 
 	for( size_t i = 0; i < upvalueCount; ++i ) {
 		Upvalue* upvalue = &compiler->upvalues[i];
-		if( upvalue->index == index && upvalue->isLocal == isLocal ) {
+		if( upvalue->index == index && upvalue->isLocal == IS_LOCAL ) {
 			return i;
 		}
 	}
@@ -486,7 +522,8 @@ static ssize_t _addUpvalue(Compiler* compiler, ssize_t index, bool isLocal) {
 		return 0;
 	}
 
-	compiler->upvalues[upvalueCount].isLocal = isLocal;
+	compiler->upvalues[upvalueCount].isLocal = IS_LOCAL;
+	compiler->upvalues[upvalueCount].isConst = IS_CONST;
 	compiler->upvalues[upvalueCount].index = index;
 	return compiler->function->upvalueCount++;
 }
@@ -498,13 +535,15 @@ static ssize_t _resolveUpvalue(Compiler* compiler, Token* name) {
 
 	ssize_t local = _resolveLocal(compiler->enclosing, name);
 	if( local != -1 ) {
-		compiler->enclosing->locals[local].isCaptured = true;
-		return _addUpvalue(compiler, local, true);
+		Local* curLocal = &compiler->enclosing->locals[local];
+		curLocal->isCaptured = true;
+		return _addUpvalue(compiler, local, true, curLocal->isConst);
 	}
 
 	ssize_t upvalue = _resolveUpvalue(compiler->enclosing, name);
 	if( upvalue != -1 ) {
-		return _addUpvalue(compiler, upvalue, false);
+		return _addUpvalue(compiler, upvalue, false,
+						   compiler->enclosing->locals[upvalue].isConst);
 	}
 
 	return -1;
@@ -543,17 +582,16 @@ static size_t _parseVariable(const char* MSG) {
 
 static void _defineVariable(const uint32_t GLOBAL) {
 	if( current->scope > 0 ) {
-		_markInitialized();
+		_markInitialized(false);
 		return;
 	}
 
-	_decreaseStackMax();
 	_emitConstantWithOp(OP_DEF_GLOBAL_16, OP_DEF_GLOBAL_32, GLOBAL);
 }
 
 static void _defineConst(const uint32_t GLOBAL) {
 	if( current->scope > 0 ) {
-		_markInitialized();
+		_markInitialized(true);
 		return;
 	}
 
@@ -649,13 +687,150 @@ static void _constDeclaration(void) {
 	_defineConst(GLOBAL);
 }
 
-static void _funcDeclaration() {
+static void _funcDeclaration(void) {
 	size_t global = _parseVariable("Esperava o nome da função");
-	_markInitialized();
+	_markInitialized(false);
 
 	_function(TYPE_FUNCTION);
 
 	_defineVariable(global);
+}
+
+static void _checkCanAssign(const ssize_t ARG, const uint8_t OP) {
+	switch( OP ) {
+		case OP_SET_LOCAL_16:
+			if( current->locals[ARG].isConst ) {
+				_errorAtPrev("Tentou mudar o valor de uma constante");
+			}
+
+			break;
+
+		case OP_SET_UPVALUE_16:
+			if( current->upvalues[ARG].isConst ) {
+				_errorAtPrev("Tentou mudar o valor de uma constante");
+			}
+
+			break;
+
+		case OP_SET_GLOBAL_16: {
+			if( IS_CONSTANT(vm.globalValues.values[ARG]) ) {
+				_errorAtPrev("Tentou mudar o valor de uma constante");
+			}
+		} break;
+
+		default:
+			break;
+	}
+}
+
+static void _namedVariable(Token name, const bool CAN_ASSIGN) {
+	uint8_t getOp, setOp;
+	ssize_t arg = _resolveLocal(current, &name);
+
+	if( arg != -1 ) {
+		getOp = OP_GET_LOCAL_16;
+		setOp = OP_SET_LOCAL_16;
+	} else if( (arg = _resolveUpvalue(current, &name)) != -1 ) {
+		getOp = OP_GET_UPVALUE_16;
+		setOp = OP_SET_UPVALUE_16;
+	} else {
+		arg = _identifierConstant(&name);
+		getOp = OP_GET_GLOBAL_16;
+		setOp = OP_SET_GLOBAL_16;
+	}
+
+	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
+		_checkCanAssign(arg, setOp);
+		_expression();
+		_emitConstantWithOp(setOp, setOp + 1, arg);
+	} else {
+		_increaseStackMax();
+		_emitConstantWithOp(getOp, getOp + 1, arg);
+	}
+}
+
+static void _method(Token* className) {
+	_consume(TOKEN_IDENTIFIER, "Esperava o nome do metodo");
+
+	ObjString* methodName =
+		objCopyString(parser.previous.START, parser.previous.length);
+	const size_t NAME = _makeConstant(CREATE_OBJECT(methodName));
+
+	if( parser.previous.length == className->length &&
+		memcmp(parser.previous.START, className->START, className->length) ==
+			0 ) {
+		_function(TYPE_CONSTRUCTOR);
+	} else {
+		_function(TYPE_METHOD);
+	}
+
+	_emitConstantWithOp(OP_METHOD_16, OP_METHOD_32, NAME);
+}
+
+static void _variable(const bool CAN_ASSIGN) {
+	_namedVariable(parser.previous, CAN_ASSIGN);
+}
+
+static Token _syntheticToken(const char* NAME) {
+	Token token;
+	token.START = NAME;
+	token.length = strlen(NAME);
+
+	return token;
+}
+
+static void _classDeclaration(void) {
+	_consume(TOKEN_IDENTIFIER, "Esperava o nome da classe");
+	Token className = parser.previous;
+
+	/* A primeira constante guarda a classe em si */
+	const size_t CONST = _identifierConstant(&parser.previous);
+
+	/* E a segunda constante guarda o nome da classe */
+	const size_t NAME = _makeConstant(CREATE_OBJECT(
+		objCopyString(parser.previous.START, parser.previous.length)));
+
+	_declareVariable();
+
+	_emitConstantWithOp(OP_CLASS_16, OP_CLASS_32, NAME);
+	_defineVariable(CONST);
+
+	ClassCompiler classCompiler;
+	classCompiler.enclosing = currentClass;
+	classCompiler.hasSuperclass = false;
+	currentClass = &classCompiler;
+
+	if( _match(TOKEN_EXTENDS) ) {
+		_consume(TOKEN_IDENTIFIER, "Esperava o nome da classe sendo herdada");
+		_variable(false);
+
+		if( _identifiersEqual(&className, &parser.previous) ) {
+			_errorAtPrev("Uma classe nao pode herdar a si mesma");
+		}
+
+		_beginScope();
+		_addLocal(_syntheticToken("super"));
+		_defineVariable(0);
+
+		_namedVariable(className, false);
+		_emitByte(OP_INHERIT);
+		classCompiler.hasSuperclass = true;
+	}
+
+	_namedVariable(className, false);
+	_consume(TOKEN_LBRACE, "Esperava '{' antes do corpo da classe");
+	while( !_check(TOKEN_RBRACE) && !_check(TOKEN_EOF) ) {
+		_method(&className);
+	}
+
+	_consume(TOKEN_RBRACE, "Esperava '}' depois do corpo da classe");
+	_emitPop();
+
+	if( classCompiler.hasSuperclass ) {
+		_endScope();
+	}
+
+	currentClass = currentClass->enclosing;
 }
 
 static void _printStatement(void) {
@@ -774,6 +949,10 @@ static void _returnStatement() {
 	if( _match(TOKEN_SEMICOLON) ) {
 		_emitReturn();
 	} else {
+		if( current->type == TYPE_CONSTRUCTOR ) {
+			_errorAtPrev("Um metodo construtor nao pode retornar um valor");
+		}
+
 		_expression();
 		_consume(TOKEN_SEMICOLON, "Esperava ';' depois do valor de retorno");
 		_increaseStackMax();
@@ -941,7 +1120,9 @@ static void _statement(void) {
  * @brief Compila uma declaração de nome
  */
 static void _declaration(void) {
-	if( _match(TOKEN_FUNC) ) {
+	if( _match(TOKEN_CLASS) ) {
+		_classDeclaration();
+	} else if( _match(TOKEN_FUNC) ) {
 		_funcDeclaration();
 	} else if( _match(TOKEN_LET) ) {
 		_varDeclaration();
@@ -1045,35 +1226,6 @@ static void _string(const bool CAN_ASSIGN) {
 	_emitConstant(CREATE_OBJECT(objCopyString(string, strSize)));
 }
 
-static void _namedVariable(Token name, const bool CAN_ASSIGN) {
-	uint8_t getOp, setOp;
-	int16_t arg = _resolveLocal(current, &name);
-
-	if( arg != -1 ) {
-		getOp = OP_GET_LOCAL_16;
-		setOp = OP_SET_LOCAL_16;
-	} else if( (arg = _resolveUpvalue(current, &name)) != -1 ) {
-		getOp = OP_GET_UPVALUE_16;
-		setOp = OP_SET_UPVALUE_16;
-	} else {
-		arg = _identifierConstant(&name);
-		getOp = OP_GET_GLOBAL_16;
-		setOp = OP_SET_GLOBAL_16;
-	}
-
-	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
-		_expression();
-		_emitConstantWithOp(setOp, setOp + 1, arg);
-	} else {
-		_increaseStackMax();
-		_emitConstantWithOp(getOp, getOp + 1, arg);
-	}
-}
-
-static void _variable(const bool CAN_ASSIGN) {
-	_namedVariable(parser.previous, CAN_ASSIGN);
-}
-
 /**
  * @brief Compila um literal (bool ou nil)
  */
@@ -1092,6 +1244,71 @@ static void _literal(const bool CAN_ASSIGN) {
 			break;
 		default:
 			return;
+	}
+}
+
+/**
+ * @brief Compila uma referência a própria classe
+ */
+static void _this(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	if( currentClass == NULL ) {
+		_errorAtPrev("Nao e possivel usar 'isto' fora de uma classe");
+		return;
+	}
+
+	_variable(false);
+}
+
+static uint8_t _argumentList(void) {
+	uint8_t argCount = 0;
+
+	if( !_check(TOKEN_RPAREN) ) {
+		do {
+			_expression();
+			++argCount;
+			if( argCount == 0 ) {
+				_errorAtPrev(
+					"Nao e possivel ter uma funcao com >255 parametros.");
+			}
+		} while( _match(TOKEN_COMMA) );
+	}
+
+	_consume(TOKEN_RPAREN, "Esperava ')' depois dos parametros.");
+	return argCount;
+}
+
+/**
+ * @brief Compila uma invocação de superclasse
+ */
+static void _super(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	if( currentClass == NULL ) {
+		_errorAtPrev("Nao se pode usar 'super' fora de uma classe");
+	} else if( !currentClass->hasSuperclass ) {
+		_errorAtPrev("Nao se pode usar 'super' em uma classe sem superclasse");
+	}
+
+	_consume(TOKEN_DOT, "Esperava '.' depois de 'super'");
+	_consume(TOKEN_IDENTIFIER, "Esperava nome do método da superclasse");
+
+	const size_t CONST = _identifierConstant(&parser.previous);
+	const size_t NAME = _makeConstant(CREATE_OBJECT(
+		objCopyString(parser.previous.START, parser.previous.length)));
+
+	_defineVariable(CONST);
+
+	_namedVariable(_syntheticToken("isto"), false);
+	if( _match(TOKEN_LPAREN) ) {
+		const uint8_t ARG_COUNT = _argumentList();
+		_namedVariable(_syntheticToken("super"), false);
+		_emitConstantWithOp(OP_SUPER_INVOKE_16, OP_SUPER_INVOKE_32, NAME);
+		_emitByte(ARG_COUNT);
+	} else {
+		_namedVariable(_syntheticToken("super"), false);
+		_emitConstantWithOp(OP_GET_SUPER_16, OP_GET_SUPER_32, NAME);
 	}
 }
 
@@ -1170,24 +1387,6 @@ static void _binary(const bool CAN_ASSIGN) {
 	}
 }
 
-static uint8_t _argumentList(void) {
-	uint8_t argCount = 0;
-
-	if( !_check(TOKEN_RPAREN) ) {
-		do {
-			_expression();
-			++argCount;
-			if( argCount == 0 ) {
-				_errorAtPrev(
-					"Nao e possivel ter uma funcao com >255 parametros.");
-			}
-		} while( _match(TOKEN_COMMA) );
-	}
-
-	_consume(TOKEN_RPAREN, "Esperava ')' depois dos parametros.");
-	return argCount;
-}
-
 static void _call(const bool CAN_ASSIGN) {
 	INTENTIONALLY_UNUSED(CAN_ASSIGN);
 
@@ -1195,6 +1394,23 @@ static void _call(const bool CAN_ASSIGN) {
 
 	const uint8_t ARG_COUNT = _argumentList();
 	_emitBytes(OP_CALL, ARG_COUNT);
+}
+
+static void _dot(const bool CAN_ASSIGN) {
+	_consume(TOKEN_IDENTIFIER, "Esperava propriedade depois do '.'");
+	const size_t NAME = _makeConstant(CREATE_OBJECT(
+		objCopyString(parser.previous.START, parser.previous.length)));
+
+	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
+		_expression();
+		_emitConstantWithOp(OP_SET_PROPERTY_16, OP_SET_PROPERTY_32, NAME);
+	} else if( _match(TOKEN_LPAREN) ) {
+		const uint8_t ARG_COUNT = _argumentList();
+		_emitConstantWithOp(OP_INVOKE_16, OP_INVOKE_32, NAME);
+		_emitByte(ARG_COUNT);
+	} else {
+		_emitConstantWithOp(OP_GET_PROPERTY_16, OP_GET_PROPERTY_32, NAME);
+	}
 }
 
 static void _conditional(const bool CAN_ASSIGN) {
@@ -1226,7 +1442,7 @@ ParseRule rules[] = {
 	[TOKEN_RBRACE] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_COMMA] = {NULL, NULL, PREC_NONE},
-	[TOKEN_DOT] = {NULL, NULL, PREC_NONE},
+	[TOKEN_DOT] = {NULL, _dot, PREC_CALL},
 	[TOKEN_SEMICOLON] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_PLUS] = {NULL, _binary, PREC_TERM},
@@ -1260,8 +1476,8 @@ ParseRule rules[] = {
 	[TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_CLASS] = {NULL, NULL, PREC_NONE},
-	[TOKEN_THIS] = {NULL, NULL, PREC_NONE},
-	[TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
+	[TOKEN_THIS] = {_this, NULL, PREC_NONE},
+	[TOKEN_SUPER] = {_super, NULL, PREC_NONE},
 
 	[TOKEN_FUNC] = {NULL, NULL, PREC_NONE},
 	[TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
@@ -1281,29 +1497,6 @@ ParseRule rules[] = {
 
 static ParseRule* _getRule(const TokenType TYPE) {
 	return &rules[TYPE];
-}
-
-ObjFunction* compCompile(const char* SOURCE) {
-	scannerInit(SOURCE);
-
-	Compiler compiler;
-	_initCompiler(&compiler, TYPE_SCRIPT);
-
-	parser.hadError = parser.panicked = false;
-
-	stackMax = 1; /* Local reservada */
-
-	_advance();
-	while( !_match(TOKEN_EOF) ) {
-		_declaration();
-	}
-
-	ObjFunction* func = _end();
-	if( parser.hadError ) {
-		return NULL;
-	}
-
-	return func;
 }
 
 static void _errorAt(Token* token, const char* MSG) {
@@ -1330,4 +1523,39 @@ static void _errorAtCurr(const char* MSG) {
 
 static void _errorAtPrev(const char* MSG) {
 	_errorAt(&parser.previous, MSG);
+}
+
+ObjFunction* compCompile(const char* SOURCE) {
+	scannerInit(SOURCE);
+
+	Compiler compiler;
+	_initCompiler(&compiler, TYPE_SCRIPT);
+
+	parser.hadError = parser.panicked = false;
+
+	stackMax = 1; /* Local reservada */
+
+	nativeInit();
+
+	_advance();
+	while( !_match(TOKEN_EOF) ) {
+		_declaration();
+	}
+
+	ObjFunction* func = _end();
+	if( parser.hadError ) {
+		return NULL;
+	}
+
+	return func;
+}
+
+void compMarkRoots(void) {
+	Compiler* compiler = current;
+
+	while( compiler != NULL ) {
+		printf("in compiler roots\n");
+		gcMarkObject((Obj*)compiler->function);
+		compiler = compiler->enclosing;
+	}
 }

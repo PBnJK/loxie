@@ -74,7 +74,33 @@ typedef enum {
 	OP_CLOSURE_32 = 42,	   /**< Cria uma closure, com um índice 24-bit */
 	OP_CLOSE_UPVALUE = 43, /**< Fecha um upvalue */
 
-	OP_RETURN = 44, /**< Retorna de uma função */
+	OP_CLASS_16 = 44, /**< Classe com índice 8-bit */
+	OP_CLASS_32 = 45, /**< Classe com índice 24-bit */
+
+	OP_SET_PROPERTY_16 =
+		46, /**< Muda uma propriedade de uma classe, com índice 8-bit */
+	OP_SET_PROPERTY_32 =
+		47, /**< Muda uma propriedade de uma classe, com índice 24-bit */
+	OP_GET_PROPERTY_16 =
+		48, /**< Pega uma propriedade de uma classe, com índice 8-bit */
+	OP_GET_PROPERTY_32 =
+		49, /**< Pega uma propriedade de uma classe, com índice 24-bit */
+
+	OP_METHOD_16 = 50, /**< Declara um método, com índice 8-bit */
+	OP_METHOD_32 = 51, /**< Declara um método, com índice 24-bit */
+
+	OP_INVOKE_16 = 52, /**< Invoca um método, com índice 8-bit */
+	OP_INVOKE_32 = 53, /**< Invoca um método, com índice 24-bit */
+
+	OP_INHERIT = 54, /**< Herda uma superclasse */
+
+	OP_GET_SUPER_16 = 55, /**< Pega a superclasse, com índice 8-bit */
+	OP_GET_SUPER_32 = 56, /**< Pega a superclasse, com índice 24-bit */
+
+	OP_SUPER_INVOKE_16 = 57, /**< Invoca a superclasse, com índice 8-bit */
+	OP_SUPER_INVOKE_32 = 58, /**< Invoca a superclasse, com índice 24-bit */
+
+	OP_RETURN = 59, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_LOXIE_OPCODES_H

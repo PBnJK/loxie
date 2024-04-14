@@ -35,6 +35,7 @@ CC := gcc
 LD := gcc
 
 CFLAGS := -Wall -Wextra -pedantic
+PROF :=
 
 # Caminhos
 BASE := $(CURDIR)
@@ -73,6 +74,10 @@ ifeq ($(LOG_GC),Y)
 	CFLAGS += -DDEBUG_LOG_GC
 endif
 
+ifeq ($(NAN_BOXING),Y)
+	CFLAGS += -DNAN_BOXING
+endif
+
 # -- Main --
 
 .PHONY: all clean reformat document fresh
@@ -83,7 +88,7 @@ all: $(OBJS)
 	@echo Linking $@
 	@echo ...
 	@echo
-	$(LD) $(OBJS) -o $(OUT)/loxiec.exe
+	$(LD) $(PROF) $(OBJS) -o $(OUT)/loxiec.exe
 	@echo
 	@echo All done!
 

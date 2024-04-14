@@ -1,0 +1,20 @@
+var a = "ABCDEFGHIJKLMNOPQRSTUVWXYZ012345";
+var a = "6789ABCDEFGHIJKLMNOPQRSTUVWXYZ01";
+var a = "23456789ABCDEFGHIJKLMNOPQRSTUVWX";
+var a = "YZ0123456789ABCDEFGHIJKLMNOPQRST";
+var a = "UVWXYZ0123456789ABCDEFGHIJKLMNOP";
+var a = "QRSTUVWXYZ0123456789ABCDEFGHIJKL";
+var a = "MNOPQRSTUVWXYZ0123456789ABCDEFGH";
+var a = "IJKLMNOPQRSTUVWXYZ0123456789ABCD";
+var a = "EFGHIJKLMNOPQRSTUVWXYZ0123456789";
+var a = "abcdefghijklmnopqrstuvwxyz012345";
+var a = "6789abcdefghijklmnopqrstuvwxyz01";
+var a = "23456789abcdefghijklmnopqrstuvwx";
+var a = "yz0123456789abcdefghijklmnopqrst";
+var a = "uvwxyz0123456789abcdefghijklmnop";
+var a = "qrstuvwxyz0123456789abcdefghijkl";
+var a = "mnopqrstuvwxyz0123456789abcdefgh";
+var a = "ijklmnopqrstuvwxyz0123456789abcd";
+var a = "efghijklmnopqrstuvwxyz0123456789";
+
+imprima a;

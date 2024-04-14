@@ -12,6 +12,7 @@
 
 #include "memory.h"
 #include "opcodes.h"
+#include "vm.h"
 
 void chunkInit(Chunk* chunk) {
 	chunk->count = 0;
@@ -72,7 +73,9 @@ void chunkWrite(Chunk* chunk, const uint8_t BYTE, const size_t LINE) {
 }
 
 size_t chunkAddConst(Chunk* chunk, Value value) {
+	vm.isLocked = true;
 	valueArrayWrite(&chunk->consts, value);
+	vm.isLocked = false;
 	return chunk->consts.count - 1;
 }
 

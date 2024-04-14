@@ -21,4 +21,9 @@
  */
 ObjFunction *compCompile(const char *SOURCE);
 
+/**
+ * @brief Marca as partes do compilador que não serão coletadas pelo GC
+ */
+void compMarkRoots(void);
+
 #endif	// GUARD_LOXIE_COMPILER_H

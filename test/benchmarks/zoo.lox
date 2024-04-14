@@ -1,0 +1,32 @@
+classe Zoo {
+	Zoo() {
+		isto.aardvark = 1;
+		isto.baboon   = 1;
+		isto.cat      = 1;
+		isto.donkey   = 1;
+		isto.elephant = 1;
+		isto.fox      = 1;
+	}
+
+	ant()    { retorne isto.aardvark; }
+	banana() { retorne isto.baboon; }
+	tuna()   { retorne isto.cat; }
+	hay()    { retorne isto.donkey; }
+	grass()  { retorne isto.elephant; }
+	mouse()  { retorne isto.fox; }
+}
+
+var zoo = Zoo();
+var sum = 0;
+var start = cronometro();
+enquanto( sum < 10000000 ) {
+  sum = sum + zoo.ant()
+            + zoo.banana()
+            + zoo.tuna()
+            + zoo.hay()
+            + zoo.grass()
+            + zoo.mouse();
+}
+
+imprima cronometro() - start;
+imprima sum;

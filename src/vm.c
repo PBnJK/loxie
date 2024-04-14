@@ -131,6 +131,8 @@ static bool _isFalsey(Value value) {
 }
 
 static void _concatenate(void) {
+	vm.isLocked = true;
+
 	ObjString *strB = AS_STRING(vmPop());
 	ObjString *strA = AS_STRING(vmPop());
 
@@ -145,6 +147,8 @@ static void _concatenate(void) {
 	result->hash = hashString(result->str, LENGTH);
 
 	tableSet(&vm.strings, CREATE_OBJECT(result), CREATE_NIL());
+
+	vm.isLocked = false;
 
 	vmPush(CREATE_OBJECT(result));
 }
@@ -193,7 +197,7 @@ static bool _call(ObjClosure *closure, const uint8_t ARG_COUNT) {
 	}
 
 	if( vm.frameCount == FRAMES_MAX ) {
-		RUNTIME_ERROR_F("Overflow da pilha (recursao profunda demais?)");
+		RUNTIME_ERROR_F("CallFrames demais (funcao recursiva demais?)");
 		return false;
 	}
 
@@ -219,6 +223,31 @@ static bool _callValue(Value callee, const uint8_t ARG_COUNT) {
 				}
 
 				return nativeCall(AS_NATIVE_FN(callee), ARG_COUNT);
+			}
+
+			case OBJ_CLASS: {
+				ObjClass *klass = AS_CLASS(callee);
+				vm.stackTop[-ARG_COUNT - 1] =
+					CREATE_OBJECT(objMakeInstance(klass));
+
+				if( !IS_NIL(klass->constructor) ) {
+					return _call(AS_CLOSURE(klass->constructor), ARG_COUNT);
+				} else if( ARG_COUNT != 0 ) {
+					RUNTIME_ERROR_F(
+						"O construtor 0 argumentos mas recebeu %d. Esqueceu de "
+						"definir um construtor?",
+						ARG_COUNT);
+					return false;
+				}
+
+				return true;
+			}
+
+			case OBJ_BOUND_METHOD: {
+				ObjBoundMethod *bound = AS_BOUND_METHOD(callee);
+				vm.stackTop[-ARG_COUNT - 1] = bound->receiver;
+
+				return _call(bound->method, ARG_COUNT);
 			}
 
 			default:
@@ -266,11 +295,57 @@ static void _closeUpvalues(Value *last) {
 	}
 }
 
-void vmInitStack(void) {
-	vm.stack = MEM_GROW_ARRAY(Value, vm.stack, (size_t)(vm.stackTop - vm.stack),
-							  vm.stackMax);
+static void _defineMethod(ObjString *name) {
+	Value method = _peek(0);
+	ObjClass *klass = AS_CLASS(_peek(1));
+	tableSet(&klass->methods, CREATE_OBJECT(name), method);
 
-	_resetStack();
+	if( name == klass->name ) {
+		klass->constructor = method;
+	}
+
+	vmPop();
+}
+
+static bool _bindMethod(ObjClass *klass, ObjString *name) {
+	Value method;
+	if( !tableGet(&klass->methods, CREATE_OBJECT(name), &method) ) {
+		RUNTIME_ERROR_F("Propriedade indefinida '%s'.", name->str);
+		return false;
+	}
+
+	ObjBoundMethod *bound = objMakeBoundMethod(_peek(0), AS_CLOSURE(method));
+	vmPop();
+	vmPush(CREATE_OBJECT(bound));
+	return true;
+}
+
+static bool _invokeFromClass(ObjClass *klass, ObjString *name,
+							 const uint8_t ARG_COUNT) {
+	Value method;
+	if( !tableGet(&klass->methods, CREATE_OBJECT(name), &method) ) {
+		RUNTIME_ERROR_F("Propriedade indefinida '%s'.", name->str);
+		return false;
+	}
+
+	return _call(AS_CLOSURE(method), ARG_COUNT);
+}
+
+static bool _invoke(ObjString *method, const uint8_t ARG_COUNT) {
+	Value receiver = _peek(ARG_COUNT);
+	if( !IS_INSTANCE(receiver) ) {
+		RUNTIME_ERROR_F("So instancias possuem metodos");
+		return false;
+	}
+
+	ObjInstance *instance = AS_INSTANCE(receiver);
+	Value value;
+	if( tableGet(&instance->fields, CREATE_OBJECT(method), &value) ) {
+		vm.stackTop[-ARG_COUNT - 1] = value;
+		return _callValue(value, ARG_COUNT);
+	}
+
+	return _invokeFromClass(instance->klass, method, ARG_COUNT);
 }
 
 static void _vmTempInitStack(void) {
@@ -278,17 +353,31 @@ static void _vmTempInitStack(void) {
 	_resetStack();
 }
 
+void vmInitStack(void) {
+	vm.stack = MEM_GROW_ARRAY(Value, vm.stack, (size_t)(vm.stackTop - vm.stack),
+							  vm.stackMax);
+
+	_resetStack();
+}
+
 void vmInit(void) {
 	vm.objects = NULL;
 	vm.stackMax = 0;
+
+	vm.grayCount = 0;
+	vm.graySize = 0;
+	vm.grayStack = NULL;
+
+	vm.bytesAllocated = 0;
+	vm.nextGC = 1024 * 1024;
+	vm.isLocked = false;
+
+	_vmTempInitStack();
 
 	tableInit(&vm.globalNames);
 	valueArrayInit(&vm.globalValues);
 
 	tableInit(&vm.strings);
-
-	_vmTempInitStack();
-	nativeInit();
 }
 
 void vmFree(void) {
@@ -310,7 +399,9 @@ Value vmPop(void) {
 }
 
 size_t vmGetLine(const uint8_t FRAME_IDX) {
-	CallFrame *frame = &vm.frames[FRAME_IDX];
+	INTENTIONALLY_UNUSED(FRAME_IDX);
+
+	CallFrame *frame = &vm.frames[vm.frameCount - 1];
 	const size_t OFFSET = frame->fp - frame->closure->function->chunk.code - 1;
 
 	return chunkGetLine(&frame->closure->function->chunk, OFFSET);
@@ -342,7 +433,7 @@ static Result _run(void) {
 			&frame->closure->function->chunk,
 			(size_t)(fp - frame->closure->function->chunk.code));
 #endif
-		const uint8_t OP = READ_8();
+		const OpCode OP = READ_8();
 		switch( OP ) {
 			case OP_CONST_16: {
 				Value constant = READ_CONST_16();
@@ -380,14 +471,16 @@ static Result _run(void) {
 
 			case OP_DEF_CONST_16: {
 				const uint8_t INDEX = READ_8();
+
 				vm.globalValues.values[INDEX] = vmPop();
-				vm.globalValues.values[INDEX].props |= 0x08;
+				SET_TO_CONSTANT(vm.globalValues.values[INDEX]);
 			} break;
 
 			case OP_DEF_CONST_32: {
 				const size_t INDEX = READ_24();
+
 				vm.globalValues.values[INDEX] = vmPop();
-				vm.globalValues.values[INDEX].props |= 0x08;
+				SET_TO_CONSTANT(vm.globalValues.values[INDEX]);
 			} break;
 
 			case OP_GET_GLOBAL_16: {
@@ -429,13 +522,11 @@ static Result _run(void) {
 				break;
 
 			case OP_SET_GLOBAL_16: {
-				uint8_t index = READ_8();
+				const uint8_t index = READ_8();
 				Value value = vm.globalValues.values[index];
+
 				if( IS_EMPTY(value) ) {
 					RUNTIME_ERROR("Variavel indefinida");
-					return RESULT_RUNTIME_ERROR;
-				} else if( IS_CONSTANT(value) ) {
-					RUNTIME_ERROR("Tentou redefinir um valor constante");
 					return RESULT_RUNTIME_ERROR;
 				}
 
@@ -443,25 +534,23 @@ static Result _run(void) {
 			} break;
 
 			case OP_SET_GLOBAL_32: {
-				uint32_t index = READ_24();
-				Value value = vm.globalValues.values[index];
+				const uint32_t INDEX = READ_24();
+				Value value = vm.globalValues.values[INDEX];
+
 				if( IS_EMPTY(value) ) {
 					RUNTIME_ERROR("Variavel indefinida");
 					return RESULT_RUNTIME_ERROR;
-				} else if( IS_CONSTANT(value) ) {
-					RUNTIME_ERROR("Tentou redefinir um valor constante");
-					return RESULT_RUNTIME_ERROR;
 				}
 
-				vm.globalValues.values[index] = _peek(0);
+				vm.globalValues.values[INDEX] = _peek(0);
 			} break;
 
 			case OP_SET_LOCAL_16:
-				vm.stack[READ_8()] = _peek(0);
+				frame->slots[READ_8()] = _peek(0);
 				break;
 
 			case OP_SET_LOCAL_32:
-				vm.stack[READ_24()] = _peek(0);
+				frame->slots[READ_24()] = _peek(0);
 				break;
 
 			case OP_SET_UPVALUE_16:
@@ -539,7 +628,11 @@ static Result _run(void) {
 					return RESULT_RUNTIME_ERROR;
 				}
 
+#ifdef NAN_BOXING
+				vmPush(-vmPop());
+#else
 				(vm.stackTop - 1)->vNumber = -(vm.stackTop - 1)->vNumber;
+#endif
 			} break;
 
 			case OP_NOT:
@@ -574,12 +667,13 @@ static Result _run(void) {
 
 			case OP_CALL: {
 				const uint8_t ARG_COUNT = READ_8();
-				frame->fp = fp;
 
 				if( vm.stackTop + ARG_COUNT > &vm.stack[vm.stackMax] ) {
 					RUNTIME_ERROR("Overflow da pilha");
 					return RESULT_RUNTIME_ERROR;
 				}
+
+				frame->fp = fp;
 
 				if( !_callValue(_peek(ARG_COUNT), ARG_COUNT) ) {
 					return RESULT_RUNTIME_ERROR;
@@ -594,7 +688,7 @@ static Result _run(void) {
 				ObjClosure *closure = objMakeClosure(function);
 				vmPush(CREATE_OBJECT(closure));
 
-				for( int16_t i = 0; i < closure->upvalueCount; ++i ) {
+				for( size_t i = 0; i < closure->upvalueCount; ++i ) {
 					uint8_t isLocal = READ_8();
 					uint32_t index = READ_24();
 					if( isLocal ) {
@@ -611,7 +705,7 @@ static Result _run(void) {
 				ObjClosure *closure = objMakeClosure(function);
 				vmPush(CREATE_OBJECT(closure));
 
-				for( int16_t i = 0; i < closure->upvalueCount; ++i ) {
+				for( size_t i = 0; i < closure->upvalueCount; ++i ) {
 					uint8_t isLocal = READ_8();
 					uint32_t index = READ_24();
 					if( isLocal ) {
@@ -627,6 +721,186 @@ static Result _run(void) {
 				_closeUpvalues(vm.stackTop - 1);
 				vmPop();
 				break;
+
+			case OP_CLASS_16:
+				vmPush(CREATE_OBJECT(objMakeClass(READ_STRING_16())));
+				break;
+
+			case OP_CLASS_32:
+				vmPush(CREATE_OBJECT(objMakeClass(READ_STRING_32())));
+				break;
+
+			case OP_GET_PROPERTY_16: {
+				if( !IS_INSTANCE(_peek(0)) ) {
+					RUNTIME_ERROR(
+						"So e possivel acessar as propriedades de uma "
+						"instancia");
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				ObjInstance *instance = AS_INSTANCE(_peek(0));
+				ObjString *name = READ_STRING_16();
+
+				Value value;
+				if( tableGet(&instance->fields, CREATE_OBJECT(name), &value) ) {
+					vmPop();
+					vmPush(value);
+					break;
+				}
+
+				frame->fp = fp;
+				if( !_bindMethod(instance->klass, name) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+			} break;
+
+			case OP_GET_PROPERTY_32: {
+				if( !IS_INSTANCE(_peek(0)) ) {
+					RUNTIME_ERROR(
+						"So e possivel acessar as propriedades de uma "
+						"instancia");
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				ObjInstance *instance = AS_INSTANCE(_peek(0));
+				ObjString *name = READ_STRING_32();
+
+				Value value;
+				if( tableGet(&instance->fields, CREATE_OBJECT(name), &value) ) {
+					vmPop();
+					vmPush(value);
+					break;
+				}
+
+				frame->fp = fp;
+				if( !_bindMethod(instance->klass, name) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+			} break;
+
+			case OP_SET_PROPERTY_16: {
+				if( !IS_INSTANCE(_peek(1)) ) {
+					RUNTIME_ERROR(
+						"So e possivel mudar as propriedades de uma "
+						"instancia");
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				ObjInstance *instance = AS_INSTANCE(_peek(1));
+				tableSet(&instance->fields, CREATE_OBJECT(READ_STRING_16()),
+						 _peek(0));
+				Value value = vmPop();
+				vmPop();
+				vmPush(value);
+			} break;
+
+			case OP_SET_PROPERTY_32: {
+				if( !IS_INSTANCE(_peek(1)) ) {
+					RUNTIME_ERROR(
+						"So e possivel mudar as propriedades de uma "
+						"instancia");
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				ObjInstance *instance = AS_INSTANCE(_peek(1));
+				tableSet(&instance->fields, CREATE_OBJECT(READ_STRING_32()),
+						 _peek(0));
+				Value value = vmPop();
+				vmPop();
+				vmPush(value);
+			} break;
+
+			case OP_METHOD_16:
+				_defineMethod(READ_STRING_16());
+				break;
+
+			case OP_METHOD_32:
+				_defineMethod(READ_STRING_32());
+				break;
+
+			case OP_INVOKE_16: {
+				ObjString *method = READ_STRING_16();
+				const uint8_t ARG_COUNT = READ_8();
+
+				frame->fp = fp;
+				if( !_invoke(method, ARG_COUNT) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				frame = &vm.frames[vm.frameCount - 1];
+				fp = frame->fp;
+			} break;
+
+			case OP_INVOKE_32: {
+				ObjString *method = READ_STRING_32();
+				const uint8_t ARG_COUNT = READ_8();
+
+				frame->fp = fp;
+				if( !_invoke(method, ARG_COUNT) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				frame = &vm.frames[vm.frameCount - 1];
+				fp = frame->fp;
+			} break;
+
+			case OP_INHERIT: {
+				Value superclass = _peek(1);
+				if( !IS_CLASS(superclass) ) {
+					RUNTIME_ERROR("So e possivel herdar classes");
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				ObjClass *subclass = AS_CLASS(_peek(0));
+				tableCopyTo(&AS_CLASS(superclass)->methods, &subclass->methods);
+				vmPop();
+			} break;
+
+			case OP_GET_SUPER_16: {
+				ObjString *name = READ_STRING_16();
+				ObjClass *superclass = AS_CLASS(vmPop());
+
+				if( !_bindMethod(superclass, name) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+			} break;
+
+			case OP_GET_SUPER_32: {
+				ObjString *name = READ_STRING_32();
+				ObjClass *superclass = AS_CLASS(vmPop());
+
+				if( !_bindMethod(superclass, name) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+			} break;
+
+			case OP_SUPER_INVOKE_16: {
+				ObjString *method = READ_STRING_16();
+				const uint8_t ARG_COUNT = READ_8();
+
+				ObjClass *superclass = AS_CLASS(vmPop());
+				frame->fp = fp;
+				if( !_invokeFromClass(superclass, method, ARG_COUNT) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				frame = &vm.frames[vm.frameCount - 1];
+				fp = frame->fp;
+			} break;
+
+			case OP_SUPER_INVOKE_32: {
+				ObjString *method = READ_STRING_32();
+				const uint8_t ARG_COUNT = READ_8();
+
+				ObjClass *superclass = AS_CLASS(vmPop());
+				frame->fp = fp;
+				if( !_invokeFromClass(superclass, method, ARG_COUNT) ) {
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				frame = &vm.frames[vm.frameCount - 1];
+				fp = frame->fp;
+			} break;
 
 			case OP_RETURN: {
 				Value result = vmPop();
@@ -662,9 +936,10 @@ Result vmInterpret(const char *SOURCE) {
 		return RESULT_COMPILER_ERROR;
 	}
 
-	vmPush(CREATE_OBJECT(function));
+	vm.isLocked = true;
 	ObjClosure *closure = objMakeClosure(function);
-	vmPop();
+	vm.isLocked = false;
+
 	vmPush(CREATE_OBJECT(closure));
 	_call(closure, 0);
 

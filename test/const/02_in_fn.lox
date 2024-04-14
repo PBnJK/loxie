@@ -1,0 +1,6 @@
+func myfunc() {
+	const HELLO = "EU. SOU. CONSTANTE!!";
+	retorne HELLO;
+}
+
+imprima myfunc();

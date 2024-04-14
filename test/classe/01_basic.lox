@@ -1,0 +1,19 @@
+classe Pessoa {
+	Pessoa(nome, idade) {
+		isto.nome = nome;
+		isto.idade = idade;
+	}
+
+	greet() {
+		imprima "oi!!";
+	}
+}
+
+classe Olga extende Pessoa {
+	Olga(juniper) {
+		isto.juniper = 2;
+	}
+}
+
+var junior = Olga("Pedro");
+imprima junior.greet();

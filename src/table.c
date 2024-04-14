@@ -8,6 +8,7 @@
 
 #include "table.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -58,6 +59,18 @@ static uint32_t _hashNumber(const LOXIE_NUMBER KEY) {
  * @return Hash do valor @a VALUE
  */
 static uint32_t _hashValue(const Value VALUE) {
+#ifdef NAN_BOXING
+	if( IS_BOOL(VALUE) ) {
+		return AS_BOOL(VALUE) ? 1231 : 1237;
+	} else if( IS_NIL(VALUE) ) {
+		return 1993;
+	} else if( IS_NUMBER(VALUE) ) {
+		return _hashNumber(AS_NUMBER(VALUE));
+	} else if( IS_OBJECT(VALUE) ) {
+		printf("%016llx\n", VALUE);
+		return AS_STRING(VALUE)->hash;
+	} else {
+#else
 	switch( GET_TYPE(VALUE) ) {
 		case VALUE_BOOL:
 			/* Mesma hash que o Java */
@@ -70,12 +83,13 @@ static uint32_t _hashValue(const Value VALUE) {
 		case VALUE_OBJECT:
 			return AS_STRING(VALUE)->hash;
 		default:
-			return 0;
+#endif
+		return 0;
 	}
 }
 
 static Entry *_findEntry(Entry *entries, const size_t SIZE, const Value KEY) {
-	uint32_t index = _hashValue(KEY) % SIZE;
+	uint32_t index = _hashValue(KEY) & (SIZE - 1);
 	Entry *tombstone = NULL;
 
 	while( true ) {
@@ -92,7 +106,7 @@ static Entry *_findEntry(Entry *entries, const size_t SIZE, const Value KEY) {
 
 		/* Não achamos uma entrada
 		 * Avançamos o índice e tentamos a próximo */
-		index = (index + 1) % SIZE;
+		index = (index + 1) & (SIZE - 1);
 	}
 }
 
@@ -136,7 +150,7 @@ Value tableFindString(Table *table, const char *STR, const size_t LEN,
 		return CREATE_EMPTY();
 	}
 
-	uint32_t index = HASH % table->size;
+	uint32_t index = HASH & (table->size - 1);
 	while( true ) {
 		Entry *entry = &table->entries[index];
 		if( IS_ENTRY_EMPTY(entry) && IS_NIL(entry->value) ) {
@@ -149,7 +163,7 @@ Value tableFindString(Table *table, const char *STR, const size_t LEN,
 			return entry->key;
 		}
 
-		index = (index + 1) % table->size;
+		index = (index + 1) & (table->size - 1);
 	}
 }
 
@@ -205,8 +219,17 @@ bool tableDelete(Table *table, const Value KEY) {
 void tableCopyTo(Table *from, Table *to) {
 	for( size_t i = 0; i < from->size; ++i ) {
 		Entry *entry = &from->entries[i];
-		if( IS_ENTRY_EMPTY(entry) ) {
+		if( !IS_ENTRY_EMPTY(entry) ) {
 			tableSet(to, entry->key, entry->value);
+		}
+	}
+}
+
+void tableRemoveWhite(Table *table) {
+	for( size_t i = 0; i < table->size; i++ ) {
+		Entry *entry = &table->entries[i];
+		if( !IS_ENTRY_EMPTY(entry) && !AS_STRING(entry->key)->obj.isMarked ) {
+			tableDelete(table, entry->key);
 		}
 	}
 }

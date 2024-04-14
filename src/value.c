@@ -16,6 +16,13 @@
 #include "vm.h"
 
 bool valueEquals(const Value A, const Value B) {
+#ifdef NAN_BOXING
+	if( IS_NUMBER(A) && IS_NUMBER(B) ) {
+		return AS_NUMBER(A) == AS_NUMBER(B);
+	}
+
+	return A == B;
+#else
 	if( GET_TYPE(A) != GET_TYPE(B) ) {
 		return false;
 	}
@@ -35,9 +42,23 @@ bool valueEquals(const Value A, const Value B) {
 	}
 
 	return false;
+#endif
 }
 
 void valuePrint(Value value) {
+#ifdef NAN_BOXING
+	if( IS_BOOL(value) ) {
+		printf(AS_BOOL(value) ? "true" : "false");
+	} else if( IS_NIL(value) ) {
+		printf("nil");
+	} else if( IS_NUMBER(value) ) {
+		printf("%g", AS_NUMBER(value));
+	} else if( IS_OBJECT(value) ) {
+		objPrint(value);
+	} else {
+		errFatal(vmGetLine(0), "Valor desconhecido %064x", value);
+	}
+#else
 	switch( GET_TYPE(value) ) {
 		case VALUE_NIL:
 			printf("nil");
@@ -57,4 +78,5 @@ void valuePrint(Value value) {
 		default:
 			errFatal(vmGetLine(0), "Valor desconhecido %u", GET_TYPE(value));
 	}
+#endif
 }

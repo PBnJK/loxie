@@ -25,9 +25,16 @@ static Obj *_allocObject(const size_t SIZE, const ObjType TYPE) {
 	Obj *newObject = memRealloc(NULL, 0, SIZE);
 
 	newObject->type = TYPE;
+	newObject->isMarked = false;
 
 	newObject->next = vm.objects;
 	vm.objects = newObject;
+
+#ifdef DEBUG_LOG_GC
+	printf("%p | Alocou %u bytes para obj. tipo %d\n", (void *)newObject, SIZE,
+		   TYPE);
+#endif
+
 	return newObject;
 }
 
@@ -100,6 +107,34 @@ ObjClosure *objMakeClosure(ObjFunction *function) {
 	return closure;
 }
 
+ObjClass *objMakeClass(ObjString *name) {
+	ObjClass *klass = ALLOC_OBJECT(ObjClass, OBJ_CLASS);
+
+	klass->name = name;
+	klass->constructor = CREATE_NIL();
+	tableInit(&klass->methods);
+
+	return klass;
+}
+
+ObjInstance *objMakeInstance(ObjClass *klass) {
+	ObjInstance *instance = ALLOC_OBJECT(ObjInstance, OBJ_INSTANCE);
+
+	instance->klass = klass;
+	tableInit(&instance->fields);
+
+	return instance;
+}
+
+ObjBoundMethod *objMakeBoundMethod(Value receiver, ObjClosure *method) {
+	ObjBoundMethod *bound = ALLOC_OBJECT(ObjBoundMethod, OBJ_BOUND_METHOD);
+
+	bound->receiver = receiver;
+	bound->method = method;
+
+	return bound;
+}
+
 uint32_t hashString(const char *KEY, const size_t LENGTH) {
 	uint32_t hash = 2166136261u;
 	for( size_t i = 0; i < LENGTH; ++i ) {
@@ -124,7 +159,10 @@ ObjString *objCopyString(const char *STR, const size_t LEN) {
 	string->str[LEN] = '\0';
 
 	string->hash = hashString(string->str, LEN);
+
+	vm.isLocked = true;
 	tableSet(&vm.strings, CREATE_OBJECT(string), CREATE_NIL());
+	vm.isLocked = false;
 
 	return string;
 }
@@ -144,11 +182,23 @@ void objPrint(const Value VALUE) {
 			break;
 
 		case OBJ_NATIVE:
-			printf("<native fn>");
+			printf("<fn nativa>");
 			break;
 
 		case OBJ_CLOSURE:
 			_printFunction(AS_CLOSURE_FN(VALUE));
+			break;
+
+		case OBJ_CLASS:
+			printf("%s", AS_CLASS(VALUE)->name->str);
+			break;
+
+		case OBJ_INSTANCE:
+			printf("instancia de %s", AS_INSTANCE(VALUE)->klass->name->str);
+			break;
+
+		case OBJ_BOUND_METHOD:
+			_printFunction(AS_BOUND_METHOD(VALUE)->method->function);
 			break;
 
 		default:

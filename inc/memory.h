@@ -65,6 +65,12 @@
 void *memRealloc(void *pointer, const size_t OLD_SIZE, const size_t NEW_SIZE);
 
 /**
+ * @brief Libera um objeto da memória
+ * @param[in] object Objeto sendo liberado
+ */
+void memFreeObject(Obj *object);
+
+/**
  * @brief Libera todos os objetos restantes da memória
  */
 void memFreeObjects(void);

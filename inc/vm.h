@@ -60,7 +60,15 @@ typedef struct VM {
 
 	Table strings;			  /**< Hashmap de strings */
 	ObjUpvalue *openUpvalues; /**< Lista de upvalues abertos */
-	Obj *objects;			  /**< Lista de objetos */
+
+	size_t bytesAllocated; /**< Bytes de memória alocados */
+	size_t nextGC;		   /**< Limite de bytes até o proximo GC */
+	bool isLocked;		   /**< Se o GC está travado */
+	Obj *objects;		   /**< Lista de objetos */
+
+	size_t grayCount; /**< Quantidade de objetos na pilha de objetos marcados*/
+	size_t graySize;  /**< Tamanho da pilha de objetos marcados*/
+	Obj **grayStack;  /**< Pilha de objetos marcados */
 } VM;
 
 extern VM vm; /**< Instância global da VM, para acesso externo */
