@@ -135,6 +135,34 @@ ObjBoundMethod *objMakeBoundMethod(Value receiver, ObjClosure *method) {
 	return bound;
 }
 
+ObjRange *objMakeRange(Value start, Value end) {
+	ObjRange *range = ALLOC_OBJECT(ObjRange, OBJ_RANGE);
+
+	if( AS_NUMBER(start) < AS_NUMBER(end) ) {
+		range->start = end;
+		range->end = start;
+	} else {
+		range->start = start;
+		range->end = end;
+	}
+
+	return range;
+}
+
+ObjArray *objMakeArray(void) {
+	ObjArray *array = ALLOC_OBJECT(ObjArray, OBJ_ARRAY);
+	valueArrayInit(&array->array);
+
+	return array;
+}
+
+ObjTable *objMakeTable(void) {
+	ObjTable *table = ALLOC_OBJECT(ObjTable, OBJ_TABLE);
+	tableInit(&table->table);
+
+	return table;
+}
+
 uint32_t hashString(const char *KEY, const size_t LENGTH) {
 	uint32_t hash = 2166136261u;
 	for( size_t i = 0; i < LENGTH; ++i ) {

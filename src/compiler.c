@@ -402,7 +402,7 @@ static void _block(void) {
 		_declaration();
 	}
 
-	_consume(TOKEN_RBRACE, "Esperava '{' depois de um bloco");
+	_consume(TOKEN_RBRACE, "Esperava '}' depois de um bloco");
 }
 
 static void _expressionStatement(void) {
@@ -874,6 +874,8 @@ static void _switchStatement(void) {
 	int16_t caseCount = 0;	   /* Quantidade de casos */
 	int32_t skipPrevCase = -1; /* Posição onde acabou o último caso */
 
+	_increaseStackMax();
+
 	while( !_match(TOKEN_RBRACE) && !_check(TOKEN_EOF) ) {
 		if( _match(TOKEN_CASE) || _match(TOKEN_DEFAULT) ) {
 			if( caseCount == MAX_CASES ) {
@@ -920,6 +922,7 @@ static void _switchStatement(void) {
 				/* Nenhum caso, logo damos erro! */
 				_errorAtPrev("Esperava um caso");
 			}
+			_emitPop();
 
 			/* Estamos dentro de um caso,
 			 * então processamos a declaração
@@ -1430,16 +1433,42 @@ static void _conditional(const bool CAN_ASSIGN) {
 	_patchJump(ELSE_JUMP);
 }
 
+static void _range(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	printf("got range\n");
+}
+
+static void _array(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+	printf("got array\n");
+}
+
+static void _dict(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	printf("got dict\n");
+}
+
+static void _subscript(const bool CAN_ASSIGN) {
+	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+
+	printf("got subscript\n");
+}
+
 /**
  * @brief Array com as regras que serão usadas na compilação da linguagem
  */
 ParseRule rules[] = {
 	[TOKEN_LPAREN] = {_grouping, _call, PREC_CALL},
 	[TOKEN_RPAREN] = {NULL, NULL, PREC_NONE},
-	[TOKEN_LBRACKET] = {NULL, NULL, PREC_NONE},
+	[TOKEN_LBRACKET] = {_array, _subscript, PREC_CALL},
 	[TOKEN_RBRACKET] = {NULL, NULL, PREC_NONE},
-	[TOKEN_LBRACE] = {NULL, NULL, PREC_NONE},
+	[TOKEN_LBRACE] = {_dict, NULL, PREC_NONE},
 	[TOKEN_RBRACE] = {NULL, NULL, PREC_NONE},
+
+	[TOKEN_DOLLAR] = {NULL, NULL, PREC_NONE},
+	[TOKEN_HASH] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_COMMA] = {NULL, NULL, PREC_NONE},
 	[TOKEN_DOT] = {NULL, _dot, PREC_CALL},
@@ -1490,6 +1519,9 @@ ParseRule rules[] = {
 	[TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LET] = {NULL, NULL, PREC_NONE},
 	[TOKEN_CONST] = {NULL, NULL, PREC_NONE},
+
+	[TOKEN_ERANGE] = {_range, NULL, PREC_RANGE},
+	[TOKEN_IRANGE] = {_range, NULL, PREC_RANGE},
 
 	[TOKEN_ERROR] = {NULL, NULL, PREC_NONE},
 	[TOKEN_EOF] = {NULL, NULL, PREC_NONE},

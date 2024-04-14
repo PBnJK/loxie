@@ -114,6 +114,22 @@ static void _blackenObject(Obj *object) {
 			gcMarkObject((Obj *)bound->method);
 		} break;
 
+		case OBJ_RANGE: {
+			ObjRange *range = (ObjRange *)object;
+			gcMarkValue(range->start);
+			gcMarkValue(range->end);
+		} break;
+
+		case OBJ_ARRAY: {
+			ObjArray *array = (ObjArray *)object;
+			_markArray(&array->array);
+		} break;
+
+		case OBJ_TABLE: {
+			ObjTable *table = (ObjTable *)object;
+			_markTable(&table->table);
+		} break;
+
 		case OBJ_NATIVE:
 		case OBJ_STRING:
 			/* Não possuem referências a outros objetos. Ignoramos */

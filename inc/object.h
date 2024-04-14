@@ -26,6 +26,9 @@ typedef enum {
 	OBJ_CLASS = 5,	  /**< Objeto representando uma classe */
 	OBJ_INSTANCE = 6, /**< Objeto representando uma instância de uma classe */
 	OBJ_BOUND_METHOD = 7, /**< Objeto representando um método capturado */
+	OBJ_RANGE = 8,		  /**< Objeto representando uma faixa de valores */
+	OBJ_ARRAY = 9,		  /**< Objeto representando um array */
+	OBJ_TABLE = 10,		  /**< Objeto representando um hashmap */
 } ObjType;
 
 /**
@@ -125,6 +128,31 @@ typedef struct ObjBoundMethod {
 	ObjClosure *method; /**< Método origem */
 } ObjBoundMethod;
 
+/**
+ * @brief Struct representando uma faixa de valores
+ */
+typedef struct ObjRange {
+	Obj obj;	 /**< Objeto base */
+	Value start; /**< Inicio da faixa (inclusivo) */
+	Value end;	 /**< Fim da faixa (exclusivo) */
+} ObjRange;
+
+/**
+ * @brief Struct representando um array
+ */
+typedef struct ObjArray {
+	Obj obj;		  /**< Objeto base */
+	ValueArray array; /**< Array */
+} ObjArray;
+
+/**
+ * @brief Struct representando um hashmap
+ */
+typedef struct ObjTable {
+	Obj obj;	 /**< Objeto base */
+	Table table; /**< Hashmap */
+} ObjTable;
+
 /** Retorna o valor de um objeto */
 #define OBJECT_TYPE(VALUE) (AS_OBJECT(VALUE)->type)
 
@@ -151,6 +179,15 @@ typedef struct ObjBoundMethod {
 
 /** Verifica se um objeto é um método capturado */
 #define IS_BOUND_METHOD(VALUE) _isObjectOfType(VALUE, OBJ_BOUND_METHOD)
+
+/** Verifica se um objeto é uma faixa numérica */
+#define IS_RANGE(VALUE) _isObjectOfType(VALUE, OBJ_RANGE)
+
+/** Verifica se um objeto é um array */
+#define IS_ARRAY(VALUE) _isObjectOfType(VALUE, OBJ_ARRAY)
+
+/** Verifica se um objeto é um hashmap */
+#define IS_TABLE(VALUE) _isObjectOfType(VALUE, OBJ_TABLE)
 
 /** Trata um objeto como sendo do tipo ObjString */
 #define AS_STRING(VALUE) ((ObjString *)AS_OBJECT(VALUE))
@@ -184,6 +221,15 @@ typedef struct ObjBoundMethod {
 
 /** Trata um objeto como sendo do tipo ObjBoundMethod */
 #define AS_BOUND_METHOD(VALUE) ((ObjBoundMethod *)AS_OBJECT(VALUE))
+
+/** Trata um objeto como sendo do tipo ObjRange */
+#define AS_RANGE(VALUE) ((ObjRange *)AS_OBJECT(VALUE))
+
+/** Trata um objeto como sendo do tipo ObjArray */
+#define AS_ARRAY(VALUE) ((ObjArray *)AS_OBJECT(VALUE))
+
+/** Trata um objeto como sendo do tipo ObjTable */
+#define AS_TABLE(VALUE) ((ObjTable *)AS_OBJECT(VALUE))
 
 /**
  * @brief Verifica se um objeto é de um dado tipo
@@ -262,6 +308,28 @@ ObjInstance *objMakeInstance(ObjClass *klass);
  * @return O método capturado
  */
 ObjBoundMethod *objMakeBoundMethod(Value receiver, ObjClosure *method);
+
+/**
+ * @brief Cria uma faixa numérica
+ *
+ * @param[in] start Começo da faixa numérica
+ * @param[in] end Fim da faixa numérica
+ *
+ * @return A faixa numérica capturada
+ */
+ObjRange *objMakeRange(Value start, Value end);
+
+/**
+ * @brief Cria um array
+ * @return O array criado
+ */
+ObjArray *objMakeArray(void);
+
+/**
+ * @brief Cria um hashmap
+ * @return O hashmap criado
+ */
+ObjTable *objMakeTable(void);
 
 /**
  * @brief Obtém a hash de uma string

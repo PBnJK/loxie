@@ -1,8 +1,10 @@
 escolha (2) {
 	caso 1:
 		imprima "caso 1";
-	caso 2:
-		imprima "caso 2";
+	caso 2: {
+		var y = "2";
+		imprima "caso " + y;
+	}
 	caso 3:
 		imprima "caso 3";
 	padrao:

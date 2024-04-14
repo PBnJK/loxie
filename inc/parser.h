@@ -24,11 +24,12 @@ typedef enum {
 	PREC_AND = 4,		  /**< E lógico */
 	PREC_EQUALITY = 5,	  /**< Comparadores de igualidade '!= e '==' */
 	PREC_COMPARISON = 6,  /**< Comparadores '<', '<=', '>' e '>=' */
-	PREC_TERM = 7,		  /**< Adição e subtração */
-	PREC_FACTOR = 8,	  /**< Multiplicação e divisão */
-	PREC_UNARY = 9,		  /**< Operadores unários '!' e '-' */
-	PREC_CALL = 10,		  /**< '.' e '()' */
-	PREC_PRIMARY = 11	  /**< Precedência máxima */
+	PREC_RANGE = 7,		  /**< Faixa de valores (1..10, 2..=3) */
+	PREC_TERM = 8,		  /**< Adição e subtração */
+	PREC_FACTOR = 9,	  /**< Multiplicação e divisão */
+	PREC_UNARY = 10,	  /**< Operadores unários '!' e '-' */
+	PREC_CALL = 11,		  /**< '.' e '()' */
+	PREC_PRIMARY = 12	  /**< Precedência máxima */
 } Precedence;
 
 typedef void (*ParseFn)(const bool); /**< Função de parsing */

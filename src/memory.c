@@ -106,6 +106,22 @@ void memFreeObject(Obj *object) {
 			MEM_FREE(ObjBoundMethod, object);
 			break;
 
+		case OBJ_RANGE:
+			MEM_FREE(ObjRange, object);
+			break;
+
+		case OBJ_ARRAY: {
+			ObjArray *array = (ObjArray *)object;
+			valueArrayFree(&array->array);
+			MEM_FREE(ObjArray, object);
+		} break;
+
+		case OBJ_TABLE: {
+			ObjTable *table = (ObjTable *)object;
+			tableFree(&table->table);
+			MEM_FREE(ObjTable, object);
+		} break;
+
 		default:
 			errFatal(vmGetLine(0),
 					 "Tentou liberar um objeto de tipo desconhecido %u",
