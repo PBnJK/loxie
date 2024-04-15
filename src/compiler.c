@@ -1423,7 +1423,7 @@ static void _conditional(const bool CAN_ASSIGN) {
 	_emitPop();
 	_expression();
 
-	_consume(TOKEN_COLON, "Esperava ':'");
+	_consume(TOKEN_COLON, "Esperava ':' depois da expressao");
 	const int32_t ELSE_JUMP = _emitJump(OP_JUMP);
 	_patchJump(THEN_JUMP);
 
@@ -1441,7 +1441,18 @@ static void _range(const bool CAN_ASSIGN) {
 
 static void _array(const bool CAN_ASSIGN) {
 	INTENTIONALLY_UNUSED(CAN_ASSIGN);
-	printf("got array\n");
+
+	_emitByte(OP_ARRAY);
+	do {
+		if( _check(TOKEN_RBRACKET) ) {
+			break;
+		}
+
+		_expression();
+		_emitByte(OP_PUSH_TO_ARRAY);
+	} while( _match(TOKEN_COMMA) );
+
+	_consume(TOKEN_RBRACKET, "Esperava ']' para fechar o array");
 }
 
 static void _dict(const bool CAN_ASSIGN) {
@@ -1451,9 +1462,20 @@ static void _dict(const bool CAN_ASSIGN) {
 }
 
 static void _subscript(const bool CAN_ASSIGN) {
-	INTENTIONALLY_UNUSED(CAN_ASSIGN);
+	//const size_t CONST = _identifierConstant(&parser.previous);
+	_expression();
+	_consume(TOKEN_RBRACKET, "Esperava ']' depois de subscrito");
 
-	printf("got subscript\n");
+	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
+		//_checkCanAssign(CONST, OP_SET_SUB_16);
+		_expression();
+		_emitByte(OP_SET_SUBSCRIPT);
+		//_emitConstantWithOp(OP_SET_SUB_16, OP_SET_SUB_32, CONST);
+	} else {
+		_increaseStackMax();
+		_emitByte(OP_GET_SUBSCRIPT);
+		//_emitConstantWithOp(OP_GET_SUB_16, OP_GET_SUB_32, CONST);
+	}
 }
 
 /**

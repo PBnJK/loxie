@@ -1,0 +1,6 @@
+var x = ["string A", "string B", "string C"];
+imprima x;
+
+x[1] = "string SPECIAL :O";
+imprima x;
+

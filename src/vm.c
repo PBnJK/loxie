@@ -348,6 +348,47 @@ static bool _invoke(ObjString *method, const uint8_t ARG_COUNT) {
 	return _invokeFromClass(instance->klass, method, ARG_COUNT);
 }
 
+static bool _getArrayValue(ValueArray *array, const int64_t INDEX) {
+	if( INDEX < 0 ) {
+		if( array->count + INDEX < 0 ) {
+			RUNTIME_ERROR_F("Tentou acessar indice fora do array!");
+			return false;
+		}
+
+		vmPush(array->values[array->count + INDEX]);
+	} else {
+		if( INDEX > array->count - 1 ) {
+			RUNTIME_ERROR_F("Tentou acessar indice fora do array!");
+			return false;
+		}
+
+		vmPush(array->values[INDEX]);
+	}
+
+	return true;
+}
+
+static bool _setArrayValue(ValueArray *array, const int64_t INDEX, Value new) {
+	if( INDEX < 0 ) {
+		if( array->count + INDEX < 0 ) {
+			RUNTIME_ERROR_F("Tentou acessar indice fora do array!");
+			return false;
+		}
+
+		array->values[array->count + INDEX] = new;
+	} else {
+		if( INDEX > array->count - 1 ) {
+			RUNTIME_ERROR_F("Tentou acessar indice fora do array!");
+			return false;
+		}
+
+		array->values[INDEX] = new;
+	}
+
+	return true;
+
+}
+
 static void _vmTempInitStack(void) {
 	vm.stack = memRealloc(vm.stack, 0, 32);
 	_resetStack();
@@ -902,6 +943,56 @@ static Result _run(void) {
 				fp = frame->fp;
 			} break;
 
+			case OP_ARRAY:
+				vmPush(CREATE_OBJECT(objMakeArray()));
+				break;
+
+			case OP_PUSH_TO_ARRAY: {
+				if( !IS_ARRAY(_peek(1)) ) {
+					RUNTIME_ERROR(
+						"Tentou adicionar um item a algo que nao e um array");
+					return RESULT_RUNTIME_ERROR;
+				}
+
+				ObjArray *array = AS_ARRAY(_peek(1));
+				valueArrayWrite(&array->array, vmPop());
+			} break;
+
+			case OP_GET_SUBSCRIPT: {
+				if( IS_ARRAY(_peek(1)) ) {
+					if( !IS_NUMBER(_peek(0)) ) {
+						RUNTIME_ERROR("Indice do array deve ser um numero");
+						return RESULT_RUNTIME_ERROR;
+					}
+
+					int64_t index = (int64_t)AS_NUMBER(vmPop());
+					ValueArray array = AS_ARRAY(vmPop())->array;
+
+					frame->fp = fp;
+					if( !_getArrayValue(&array, index) ) {
+						return RESULT_RUNTIME_ERROR;
+					}
+				}
+			} break;
+			
+			case OP_SET_SUBSCRIPT: {
+				if( IS_ARRAY(_peek(2)) ) {
+					if( !IS_NUMBER(_peek(1)) ) {
+						RUNTIME_ERROR("Indice do array deve ser um numero");
+						return RESULT_RUNTIME_ERROR;
+					}
+
+					Value value = vmPop();
+					int64_t index = (int64_t)AS_NUMBER(vmPop());
+					ValueArray array = AS_ARRAY(vmPop())->array;
+
+					frame->fp = fp;
+					if( !_setArrayValue(&array, index, value) ) {
+						return RESULT_RUNTIME_ERROR;
+					}
+				}
+			} break;
+			
 			case OP_RETURN: {
 				Value result = vmPop();
 				frame->fp = fp;

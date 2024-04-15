@@ -40,15 +40,27 @@ static Obj *_allocObject(const size_t SIZE, const ObjType TYPE) {
 
 static void _printFunction(ObjFunction *function) {
 	if( function->name == NULL ) {
-		/* Função não tem nome
-		 * Ou o usuário fez algo esquisito, ou este é o script em si
-		 * Vamos apostar na última hipótese...
-		 */
+		/* Função não tem nome, logo é o script em si */
 		printf("<script>");
 		return;
 	}
 
 	printf("<func %s>", function->name->str);
+}
+
+static void _printArray(ValueArray *array) {
+	size_t idx = 0;
+
+	printf("[");
+	while( idx < array->count ) {
+		valuePrint(array->values[idx]);
+
+		if( (++idx) != array->count ) {
+			printf(", ");
+		}
+	}
+
+	printf("]");
 }
 
 ObjString *objMakeString(const size_t LEN) {
@@ -227,6 +239,18 @@ void objPrint(const Value VALUE) {
 
 		case OBJ_BOUND_METHOD:
 			_printFunction(AS_BOUND_METHOD(VALUE)->method->function);
+			break;
+
+		case OBJ_RANGE:
+			printf("range");
+			break;
+
+		case OBJ_ARRAY:
+			_printArray(&AS_ARRAY(VALUE)->array);
+			break;
+
+		case OBJ_TABLE:
+			printf("table");
 			break;
 
 		default:

@@ -245,6 +245,14 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _invoke16Op("OP_SUPER_INVOKE_16", chunk, offset);
 		case OP_SUPER_INVOKE_32:
 			return _invoke32Op("OP_SUPER_INVOKE_32", chunk, offset);
+		case OP_ARRAY:
+			return _simpleOp("OP_ARRAY", offset);
+		case OP_PUSH_TO_ARRAY:
+			return _simpleOp("OP_PUSH_TO_ARRAY", offset);
+		case OP_GET_SUBSCRIPT:
+			return _simpleOp("OP_GET_SUBSCRIPT", offset);
+		case OP_SET_SUBSCRIPT:
+			return _simpleOp("OP_SET_SUBSCRIPT", offset);
 		case OP_RETURN:
 			return _simpleOp("OP_RETURN", offset);
 		default:

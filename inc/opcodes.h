@@ -100,7 +100,16 @@ typedef enum {
 	OP_SUPER_INVOKE_16 = 57, /**< Invoca a superclasse, com índice 8-bit */
 	OP_SUPER_INVOKE_32 = 58, /**< Invoca a superclasse, com índice 24-bit */
 
-	OP_RETURN = 59, /**< Retorna de uma função */
+	OP_ARRAY = 59,		   /**< Inicializa um array */
+	OP_PUSH_TO_ARRAY = 60, /**< Adiciona à um array */
+
+	OP_TABLE = 61,		   /**< Inicializa um array */
+	OP_PUSH_TO_TABLE = 62, /**< Adiciona à um array */
+
+	OP_GET_SUBSCRIPT = 63, /**< Pega um valor de um array/dict/string/etc... */
+	OP_SET_SUBSCRIPT = 64, /**< Muda um valor de um array/dict/string/etc... */
+
+	OP_RETURN = 65, /**< Retorna de uma função */
 } OpCode;
 
 #endif	// GUARD_LOXIE_OPCODES_H
