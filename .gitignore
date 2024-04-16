@@ -1,6 +1,6 @@
 backup/
-obj/
-out/
+obj/*
+out/*
 doc/html/
 
 *.swp
