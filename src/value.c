@@ -29,13 +29,14 @@ bool valueEquals(const Value A, const Value B) {
 
 	switch( GET_TYPE(A) ) {
 		case VALUE_NIL:
+		case VALUE_EMPTY:
 			return true;
 		case VALUE_BOOL:
 			return AS_BOOL(A) == AS_BOOL(B);
 		case VALUE_NUMBER:
 			return AS_NUMBER(A) == AS_NUMBER(B);
 		case VALUE_OBJECT:
-			return AS_OBJECT(A) == AS_OBJECT(B);
+			return objEquals(A, B);
 		default:
 			errFatal(vmGetLine(0), "Tentou comparar %u com %u", GET_TYPE(A),
 					 GET_TYPE(B));

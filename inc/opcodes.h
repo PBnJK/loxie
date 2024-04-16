@@ -103,11 +103,13 @@ typedef enum {
 	OP_ARRAY = 59,		   /**< Inicializa um array */
 	OP_PUSH_TO_ARRAY = 60, /**< Adiciona à um array */
 
-	OP_TABLE = 61,		   /**< Inicializa um array */
-	OP_PUSH_TO_TABLE = 62, /**< Adiciona à um array */
+	OP_TABLE = 61,		   /**< Inicializa um hashmap */
+	OP_PUSH_TO_TABLE = 62, /**< Adiciona à um hashmap */
 
-	OP_GET_SUBSCRIPT = 63, /**< Pega um valor de um array/dict/string/etc... */
-	OP_SET_SUBSCRIPT = 64, /**< Muda um valor de um array/dict/string/etc... */
+	OP_GET_SUBSCRIPT =
+		63, /**< Pega um valor de um array/hashmap/string/etc... */
+	OP_SET_SUBSCRIPT =
+		64, /**< Muda um valor de um array/hashmap/string/etc... */
 
 	OP_RETURN = 65, /**< Retorna de uma função */
 } OpCode;

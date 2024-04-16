@@ -63,6 +63,31 @@ static void _printArray(ValueArray *array) {
 	printf("]");
 }
 
+static void _printTable(Table *table) {
+	size_t idx = 0;
+	size_t items = 0;
+
+	printf("{");
+	while( idx < table->size ) {
+		if( IS_EMPTY(table->entries[idx].key) ) {
+			++idx;
+			continue;
+		}
+
+		valuePrint(table->entries[idx].key);
+		printf(": ");
+		valuePrint(table->entries[idx].value);
+
+		if( (++items) == table->count ) {
+			break;
+		}
+
+		++idx;
+		printf(", ");
+	}
+
+	printf("}");
+}
 ObjString *objMakeString(const size_t LEN) {
 	ObjString *string =
 		(ObjString *)_allocObject(sizeof(ObjString) + LEN + 1, OBJ_STRING);
@@ -250,12 +275,70 @@ void objPrint(const Value VALUE) {
 			break;
 
 		case OBJ_TABLE:
-			printf("table");
+			_printTable(&AS_TABLE(VALUE)->table);
 			break;
 
 		default:
 			errFatal(vmGetLine(0),
 					 "Tentou imprimir objeto de tipo desconhecido %u",
 					 OBJECT_TYPE(VALUE));
+	}
+}
+
+static bool _arrayEquals(const ValueArray *A, const ValueArray *B) {
+	if( A->count != B->count ) {
+		return false;
+	}
+
+	for( size_t idx = 0; idx < A->count; ++idx ) {
+		if( !valueEquals(A->values[idx], A->values[idx]) ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool _tableEquals(const Table *A, const Table *B) {
+	if( A->count != B->count ) {
+		return false;
+	}
+
+	for( size_t idx = 0; idx < A->size; ++idx ) {
+		if( !valueEquals(A->entries[idx].key, B->entries[idx].key) ||
+			!valueEquals(A->entries[idx].value, B->entries[idx].value) ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool objEquals(const Value A, const Value B) {
+	switch( OBJECT_TYPE(A) ) {
+		case OBJ_STRING:
+		case OBJ_UPVALUE:
+		case OBJ_FUNCTION:
+		case OBJ_NATIVE:
+		case OBJ_CLOSURE:
+		case OBJ_CLASS:
+		case OBJ_INSTANCE:
+		case OBJ_BOUND_METHOD:
+			return AS_OBJECT(A) == AS_OBJECT(B);
+
+		case OBJ_RANGE:
+			return false;
+
+		case OBJ_ARRAY:
+			return _arrayEquals(&AS_ARRAY(A)->array, &AS_ARRAY(B)->array);
+
+		case OBJ_TABLE:
+			return _tableEquals(&AS_TABLE(A)->table, &AS_TABLE(B)->table);
+
+		default:
+			errFatal(vmGetLine(0),
+					 "Tentou comparar objetos de tipo desconhecido %u",
+					 OBJECT_TYPE(A));
+			return false;
 	}
 }

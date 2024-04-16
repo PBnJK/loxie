@@ -29,7 +29,6 @@
  * @brief Obtém a hash de um número
  *
  * @param[in] KEY Número a partir do qual a hash será gerada
- *
  * @return Hash do número @a KEY
  */
 static uint32_t _hashNumber(const LOXIE_NUMBER KEY) {
@@ -51,14 +50,7 @@ static uint32_t _hashNumber(const LOXIE_NUMBER KEY) {
 #endif
 }
 
-/**
- * @brief Obtém a hash de um valor
- *
- * @param[in] VALUE Valor a partir do qual a hash será gerada
- *
- * @return Hash do valor @a VALUE
- */
-static uint32_t _hashValue(const Value VALUE) {
+uint32_t tableHashValue(const Value VALUE) {
 #ifdef NAN_BOXING
 	if( IS_BOOL(VALUE) ) {
 		return AS_BOOL(VALUE) ? 1231 : 1237;
@@ -67,7 +59,6 @@ static uint32_t _hashValue(const Value VALUE) {
 	} else if( IS_NUMBER(VALUE) ) {
 		return _hashNumber(AS_NUMBER(VALUE));
 	} else if( IS_OBJECT(VALUE) ) {
-		printf("%016llx\n", VALUE);
 		return AS_STRING(VALUE)->hash;
 	} else {
 #else
@@ -89,7 +80,7 @@ static uint32_t _hashValue(const Value VALUE) {
 }
 
 static Entry *_findEntry(Entry *entries, const size_t SIZE, const Value KEY) {
-	uint32_t index = _hashValue(KEY) & (SIZE - 1);
+	uint32_t index = tableHashValue(KEY) & (SIZE - 1);
 	Entry *tombstone = NULL;
 
 	while( true ) {

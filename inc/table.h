@@ -42,6 +42,14 @@ void tableInit(Table *table);
 void tableFree(Table *table);
 
 /**
+ * @brief Obtém a hash de um valor
+ *
+ * @param[in] VALUE Valor a partir do qual a hash será gerada
+ * @return Hash do valor @a VALUE
+ */
+uint32_t tableHashValue(const Value VALUE);
+
+/**
  * @brief Procura por uma string em um hashmap
  *
  * @param[in] table Ponteiro pro hashmap

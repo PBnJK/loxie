@@ -355,9 +355,18 @@ ObjString *objCopyString(const char *STR, const size_t LEN);
 
 /**
  * @brief Imprime um objeto
- *
  * @param[in] VALUE Valor que será impresso
  */
 void objPrint(const Value VALUE);
+
+/**
+ * @brief Compara dois objetos de tipo igual
+ *
+ * @param[in] A Valor A
+ * @param[in] B Valor B
+ *
+ * @return Se os dois objetos são iguais
+ */
+bool objEquals(const Value A, const Value B);
 
 #endif	// GUARD_LOXIE_OBJECT_H

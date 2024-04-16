@@ -249,6 +249,10 @@ size_t debugDisassembleInstruction(Chunk* chunk, size_t offset) {
 			return _simpleOp("OP_ARRAY", offset);
 		case OP_PUSH_TO_ARRAY:
 			return _simpleOp("OP_PUSH_TO_ARRAY", offset);
+		case OP_TABLE:
+			return _simpleOp("OP_TABLE", offset);
+		case OP_PUSH_TO_TABLE:
+			return _simpleOp("OP_PUSH_TO_TABLE", offset);
 		case OP_GET_SUBSCRIPT:
 			return _simpleOp("OP_GET_SUBSCRIPT", offset);
 		case OP_SET_SUBSCRIPT:

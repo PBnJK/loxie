@@ -660,7 +660,7 @@ static void _function(const FunctionType TYPE) {
 }
 
 static void _varDeclaration(void) {
-	const size_t GLOBAL = _parseVariable("Esperava o nome da variável.");
+	const size_t GLOBAL = _parseVariable("Esperava o nome da variavel.");
 
 	if( _match(TOKEN_EQUAL) ) {
 		_expression();
@@ -668,7 +668,7 @@ static void _varDeclaration(void) {
 		_emitByte(OP_NIL);
 	}
 
-	_consume(TOKEN_SEMICOLON, "Esperava ';' depois de declaração de variável.");
+	_consume(TOKEN_SEMICOLON, "Esperava ';' depois de declaracao de variavel.");
 
 	_defineVariable(GLOBAL);
 }
@@ -1455,26 +1455,35 @@ static void _array(const bool CAN_ASSIGN) {
 	_consume(TOKEN_RBRACKET, "Esperava ']' para fechar o array");
 }
 
-static void _dict(const bool CAN_ASSIGN) {
+static void _table(const bool CAN_ASSIGN) {
 	INTENTIONALLY_UNUSED(CAN_ASSIGN);
 
-	printf("got dict\n");
+	_emitByte(OP_TABLE);
+	do {
+		if( _check(TOKEN_RBRACE) ) {
+			break;
+		}
+
+		_expression();
+		_consume(TOKEN_COLON, "Esperava ':' depois do valor-chave");
+		_expression();
+
+		_emitByte(OP_PUSH_TO_TABLE);
+	} while( _match(TOKEN_COMMA) );
+
+	_consume(TOKEN_RBRACE, "Esperava '}' para fechar o hashmap");
 }
 
 static void _subscript(const bool CAN_ASSIGN) {
-	//const size_t CONST = _identifierConstant(&parser.previous);
 	_expression();
 	_consume(TOKEN_RBRACKET, "Esperava ']' depois de subscrito");
 
 	if( CAN_ASSIGN && _match(TOKEN_EQUAL) ) {
-		//_checkCanAssign(CONST, OP_SET_SUB_16);
 		_expression();
 		_emitByte(OP_SET_SUBSCRIPT);
-		//_emitConstantWithOp(OP_SET_SUB_16, OP_SET_SUB_32, CONST);
 	} else {
 		_increaseStackMax();
 		_emitByte(OP_GET_SUBSCRIPT);
-		//_emitConstantWithOp(OP_GET_SUB_16, OP_GET_SUB_32, CONST);
 	}
 }
 
@@ -1486,7 +1495,7 @@ ParseRule rules[] = {
 	[TOKEN_RPAREN] = {NULL, NULL, PREC_NONE},
 	[TOKEN_LBRACKET] = {_array, _subscript, PREC_CALL},
 	[TOKEN_RBRACKET] = {NULL, NULL, PREC_NONE},
-	[TOKEN_LBRACE] = {_dict, NULL, PREC_NONE},
+	[TOKEN_LBRACE] = {_table, NULL, PREC_NONE},
 	[TOKEN_RBRACE] = {NULL, NULL, PREC_NONE},
 
 	[TOKEN_DOLLAR] = {NULL, NULL, PREC_NONE},
